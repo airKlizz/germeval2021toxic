@@ -53,7 +53,7 @@ def preprocess_dataset(dataset):
     tokenizer = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT, use_fast=True)
 
     def preprocess_function(examples):
-        output = tokenizer(examples["comment_text"], truncation=True)
+        output = tokenizer(examples["comment_text"], padding="max_length", truncation=True)
         toxic = examples["Sub1_Toxic"]
         engaging = examples["Sub2_Engaging"]
         factclaiming = examples["Sub3_FactClaiming"]
