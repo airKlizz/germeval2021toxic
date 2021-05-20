@@ -1,0 +1,11 @@
+SEED = 42
+TRAIN_CSV = "data/train.csv"
+TRAIN_TRAIN_CSV = "data/train.train.csv"
+TRAIN_TEST_CSV = "data/train.test.csv"
+TRAIN_RATIO = 0.8
+NUM_LABELS = 3
+MODEL_CHECKPOINT = "bert-base-uncased"
+OUTPUT_DIR = "models"
+BATCH_SIZE = 16
+LEARNING_RATE = 2e-5
+NB_EPOCH = 5
