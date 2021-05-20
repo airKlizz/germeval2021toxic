@@ -19,11 +19,10 @@ args = TrainingArguments(
     num_train_epochs=NB_EPOCH,
     weight_decay=0.01,
     load_best_model_at_end=True,
-    metric_for_best_model="metrics/singleclass.py",
     metric_for_best_model="accuracy",
 )
 
-metric = load_metric("metrics/multiclass.py")
+metric = load_metric("metrics/singleclass.py")
 
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
