@@ -4,7 +4,8 @@ from datasets import load_dataset
 from transformers import AutoTokenizer
 
 
-def split(train_ratio, train_csv, train_train_csv, train_test_csv):
+def split(train_ratio, train_csv, train_train_csv, train_test_csv, seed):
+    random.seed(seed)
     with open(train_csv) as f:
         data = f.read().split("\n")
     header = data[0]
@@ -27,23 +28,15 @@ def split(train_ratio, train_csv, train_train_csv, train_test_csv):
             f.write("\n")
 
 
-def load_train(train_train_csv, model_checkpoint=None, preprocess=False):
-    data = load_dataset("csv", data_files=[train_train_csv])
+def load_dataset(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None):
+    data = load_dataset("csv", data_files=[csv])
     dataset = data["train"]
     if preprocess:
-        return preprocess_dataset(dataset, model_checkpoint)
+        return preprocess_dataset(dataset, model_checkpoint, num_labels, label)
     return dataset
 
 
-def load_test(train_test_csv, model_checkpoint=None, preprocess=False):
-    data = load_dataset("csv", data_files=[train_test_csv])
-    dataset = data["train"]
-    if preprocess:
-        return preprocess_dataset(dataset, model_checkpoint)
-    return dataset
-
-
-def preprocess_dataset(dataset, model_checkpoint):
+def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None):
 
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
@@ -54,10 +47,25 @@ def preprocess_dataset(dataset, model_checkpoint):
         factclaiming = examples["Sub3_FactClaiming"]
         labels = []
         for t, e, f in zip(toxic, engaging, factclaiming):
-            t = 1.0 if t == 1 else -1.0
-            e = 1.0 if e == 1 else -1.0
-            f = 1.0 if f == 1 else -1.0
-            labels.append([t, e, f])
+            if num_labels == 3:
+                t = 1.0 if t == 1 else -1.0
+                e = 1.0 if e == 1 else -1.0
+                f = 1.0 if f == 1 else -1.0
+                labels.append([t, e, f])
+            elif num_labels == 1:
+                assert label is not None and (label == 0 or label == 1 or label == 2)
+                if label == 0:
+                    value = t
+                elif label == 1:
+                    value = e
+                else:
+                    value = f
+                if value == 1:
+                    labels.append([0, 1])
+                else:
+                    labels.append([1, 0])
+            else:
+                raise NotImplementedError("Preprocessing method implemented only for 1 or 3 labels.")
         output["labels"] = labels
         return output
 
