@@ -128,6 +128,7 @@ def singleclass(
     logger.info("Load and preprocess the dataset.")
     train_dataset = load(train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
     test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
+    logger.info(f"Dataset sample: {train_dataset[0]}")
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
     trainer = Trainer(
