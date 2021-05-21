@@ -6,3 +6,4 @@ black
 isort
 loguru
 typer
+sentencepiece

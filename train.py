@@ -86,6 +86,7 @@ def singleclass(
     model_checkpoint: str = "deepset/gbert-base",
     output_dir: str = "models/singleclass/",
     batch_size: int = 16,
+    gradient_accumulation_steps: int = 1,
     learning_rate: float = 2e-5,
     nb_epoch: int = 5,
 ):
@@ -110,6 +111,7 @@ def singleclass(
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         num_train_epochs=nb_epoch,
         weight_decay=0.01,
         load_best_model_at_end=True,
