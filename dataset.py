@@ -55,15 +55,12 @@ def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None):
             elif num_labels == 1:
                 assert label is not None and (label == 0 or label == 1 or label == 2)
                 if label == 0:
-                    value = t
+                    labels.append(t)
                 elif label == 1:
-                    value = e
+                    labels.append(e)
                 else:
-                    value = f
-                if value == 1:
-                    labels.append([0, 1])
-                else:
-                    labels.append([1, 0])
+                    labels.append(f)
+                
             else:
                 raise NotImplementedError("Preprocessing method implemented only for 1 or 3 labels.")
         output["labels"] = labels
