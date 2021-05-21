@@ -8,7 +8,7 @@ from loguru import logger
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           Trainer, TrainingArguments)
 
-from dataset import load_dataset
+from dataset import load
 
 app = typer.Typer()
 
@@ -58,8 +58,8 @@ def multiclass(
         return metric.compute(predictions=predictions.astype("int32"), references=labels.astype("int32"))
 
     logger.info("Load and preprocess the dataset.")
-    train_dataset = load_dataset(train_csv, model_checkpoint, preprocess=True)
-    test_dataset = load_dataset(test_csv, model_checkpoint, preprocess=True)
+    train_dataset = load(train_csv, model_checkpoint, preprocess=True)
+    test_dataset = load(test_csv, model_checkpoint, preprocess=True)
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
     trainer = Trainer(
@@ -126,8 +126,8 @@ def singleclass(
         return metric.compute(predictions=predictions, references=labels)
 
     logger.info("Load and preprocess the dataset.")
-    train_dataset = load_dataset(train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
-    test_dataset = load_dataset(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
+    train_dataset = load(train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
+    test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
     trainer = Trainer(

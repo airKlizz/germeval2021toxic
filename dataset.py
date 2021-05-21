@@ -28,7 +28,7 @@ def split(train_ratio, train_csv, train_train_csv, train_test_csv, seed):
             f.write("\n")
 
 
-def load_dataset(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None):
+def load(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None):
     data = load_dataset("csv", data_files=[csv])
     dataset = data["train"]
     if preprocess:
