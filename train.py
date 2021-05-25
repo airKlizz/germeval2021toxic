@@ -131,6 +131,8 @@ def singleclass(
         return metric.compute(predictions=predictions, references=labels)
 
     logger.info("Load and preprocess the dataset.")
+    logger.debug(f"train_csv: {train_csv}")
+    logger.debug(f"test_csv: {test_csv}")
     train_dataset = load(train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
     test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
     logger.info(f"Dataset sample: {train_dataset[0]}")
