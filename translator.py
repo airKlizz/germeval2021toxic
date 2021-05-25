@@ -7,9 +7,9 @@ app = typer.Typer()
 
 
 @app.command()
-def translate(csv: str, output_csv: str, lang_iso: str, batch_size: int = 16):
+def translate(csv: str, output_csv: str, lang_iso: str, batch_size: int = 16, device: int = -1):
     tokenizer = AutoTokenizer.from_pretrained(f"Helsinki-NLP/opus-mt-de-{lang_iso}", use_fast=True)
-    translator = pipeline(f"translation_de_to_{lang_iso}", model=f"Helsinki-NLP/opus-mt-de-{lang_iso}")
+    translator = pipeline(f"translation_de_to_{lang_iso}", model=f"Helsinki-NLP/opus-mt-de-{lang_iso}", device=device)
     df = pd.read_csv(csv)
     translated_df = pd.read_csv(csv)
     too_long_samples = []
