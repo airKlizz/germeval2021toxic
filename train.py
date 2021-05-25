@@ -160,10 +160,6 @@ def hyperparameter_search_singleclass(
     label: int = 0,
     model_checkpoint: str = "deepset/gbert-base",
     output_dir: str = "models/hyperparameter_search_singleclass/",
-    batch_size: int = 16,
-    gradient_accumulation_steps: int = 1,
-    learning_rate: float = 2e-5,
-    nb_epoch: int = 5,
 ):
     logger.info(f"Start singleclass training.")
     output_dir += (
@@ -172,12 +168,6 @@ def hyperparameter_search_singleclass(
         + str(label)
         + "_languages="
         + "+".join(train_csv).replace("data/", "").replace("/", "_")
-        + "_bs="
-        + str(batch_size)
-        + "_lr="
-        + str(learning_rate)
-        + "_epoch="
-        + str(nb_epoch)
     )
 
     def model_init():
@@ -186,12 +176,6 @@ def hyperparameter_search_singleclass(
     args = TrainingArguments(
         output_dir=output_dir,
         evaluation_strategy="epoch",
-        learning_rate=learning_rate,
-        per_device_train_batch_size=batch_size,
-        per_device_eval_batch_size=batch_size,
-        gradient_accumulation_steps=gradient_accumulation_steps,
-        num_train_epochs=nb_epoch,
-        weight_decay=0.01,
         load_best_model_at_end=True,
         metric_for_best_model="accuracy",
         logging_dir="./logs",

@@ -8,3 +8,4 @@ loguru
 typer
 sentencepiece
 pandas
+optuna
