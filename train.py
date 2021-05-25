@@ -1,4 +1,5 @@
 import random
+from typing import List, Union
 
 import numpy as np
 import torch
@@ -15,7 +16,7 @@ app = typer.Typer()
 
 @app.command()
 def multiclass(
-    train_csv: str = "data/train.train.csv",
+    train_csv: List[str] = ["data/train.train.csv"],
     test_csv: str = "data/train.test.csv",
     model_checkpoint: str = "deepset/gbert-base",
     output_dir: str = "models/multiclass/",
@@ -80,7 +81,7 @@ def multiclass(
 
 @app.command()
 def singleclass(
-    train_csv: str = "data/train.train.csv",
+    train_csv: List[str] = ["data/train.train.csv"],
     test_csv: str = "data/train.test.csv",
     label: int = 0,
     model_checkpoint: str = "deepset/gbert-base",
@@ -95,6 +96,8 @@ def singleclass(
         model_checkpoint.replace("/", "_")
         + "_label="
         + str(label)
+        + "_languages="
+        + "+".join(train_csv).replace("data/", "").replace("/", "_")
         + "_bs="
         + str(batch_size)
         + "_lr="

@@ -29,7 +29,9 @@ def split(train_ratio, train_csv, train_train_csv, train_test_csv, seed):
 
 
 def load(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None):
-    data = load_dataset("csv", data_files=[csv])
+    if isinstance(csv, str):
+        csv = [csv]
+    data = load_dataset("csv", data_files=csv)
     dataset = data["train"]
     if preprocess:
         return preprocess_dataset(dataset, model_checkpoint, num_labels, label)
@@ -60,7 +62,7 @@ def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None):
                     labels.append(e)
                 else:
                     labels.append(f)
-                
+
             else:
                 raise NotImplementedError("Preprocessing method implemented only for 1 or 3 labels.")
         output["labels"] = labels
