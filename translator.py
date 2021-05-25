@@ -24,7 +24,7 @@ def translate(csv: str, output_csv: str, lang_iso: str, batch_size: int = 16):
         for k, r in enumerate(responses):
             translated_df.at[i + k, "comment_text"] = r["translation_text"]
     print(f"Number of samples too long: {len(too_long_samples)}")
-    translated_df.drop(translated_df.index[too_long_samples])
+    translated_df = translated_df.drop(translated_df.index[too_long_samples])
     translated_df.to_csv(output_csv)
 
 
