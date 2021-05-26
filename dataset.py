@@ -1,7 +1,25 @@
 import random
 
+import numpy as np
+import typer
 from datasets import load_dataset
 from transformers import AutoTokenizer
+
+app = typer.Typer()
+
+
+def describe(l):
+    l = np.array(l)
+    return {
+        "min": l.min(),
+        "max": l.max(),
+        "mean": l.mean(),
+        "10th percentile": np.percentile(l, 10),
+        "30th percentile": np.percentile(l, 30),
+        "50th percentile": np.percentile(l, 50),
+        "70th percentile": np.percentile(l, 70),
+        "90th percentile": np.percentile(l, 90),
+    }
 
 
 def split(train_ratio, train_csv, train_train_csv, train_test_csv, seed):
@@ -70,3 +88,37 @@ def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None, max_
         return output
 
     return dataset.map(preprocess_function, batched=True)
+
+
+@app.command()
+def stats(csv: str, model_checkpoint: str):
+    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    if isinstance(csv, str):
+        csv = [csv]
+    csv = list(csv)
+    data = load_dataset("csv", data_files=csv)
+    dataset = data["train"]
+    lengths = []
+    toxic_labels = []
+    engaging_labels = []
+    factclaiming_labels = []
+    for entry in dataset:
+        lengths.append(len(tokenizer(entry["comment_text"])["input_ids"]))
+        toxic_labels.append(entry["Sub1_Toxic"])
+        engaging_labels.append(entry["Sub2_Engaging"])
+        factclaiming_labels.append(entry["Sub3_FactClaiming"])
+
+    print(
+        "Lengths: ",
+        describe(lengths),
+        "\nToxic: ",
+        np.array(toxic_labels).mean(),
+        "\nEngaging: ",
+        np.array(engaging_labels).mean(),
+        "\nFactclaiming: ",
+        np.array(factclaiming_labels).mean(),
+    )
+
+
+if __name__ == "__main__":
+    app()

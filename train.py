@@ -14,6 +14,18 @@ from dataset import load
 app = typer.Typer()
 
 
+class TrainerWithClassWeightsToxic(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.pop("labels")
+        outputs = model(**inputs)
+        logits = outputs.logits
+        loss_fct = torch.nn.CrossEntropyLoss(
+            weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
+        )
+        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
+
+
 @app.command()
 def multiclass(
     train_csv: List[str] = ["data/train.train.csv"],
@@ -85,6 +97,7 @@ def singleclass(
     train_csv: List[str] = ["data/train.train.csv"],
     test_csv: str = "data/train.test.csv",
     label: int = 0,
+    class_weights: bool = True,
     model_checkpoint: str = "deepset/gbert-base",
     output_dir: str = "models/singleclass/",
     batch_size: int = 16,
@@ -96,6 +109,8 @@ def singleclass(
     logger.info(f"Start singleclass training.")
     output_dir += (
         model_checkpoint.replace("/", "_")
+        + "_class_weights="
+        + str(class_weights)
         + "_label="
         + str(label)
         + "_languages="
@@ -142,14 +157,27 @@ def singleclass(
     logger.info(f"Dataset sample: {train_dataset[0]}")
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
-    trainer = Trainer(
-        model,
-        args,
-        train_dataset=train_dataset,
-        eval_dataset=test_dataset,
-        tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
-    )
+    if class_weights == True:
+        if label == 0:
+            trainer = TrainerWithClassWeightsToxic(
+                model,
+                args,
+                train_dataset=train_dataset,
+                eval_dataset=test_dataset,
+                tokenizer=tokenizer,
+                compute_metrics=compute_metrics,
+            )
+        else:
+            raise NotImplementedError()
+    else:
+        trainer = Trainer(
+            model,
+            args,
+            train_dataset=train_dataset,
+            eval_dataset=test_dataset,
+            tokenizer=tokenizer,
+            compute_metrics=compute_metrics,
+        )
 
     logger.info("Start the training.")
     trainer.train()
@@ -163,6 +191,7 @@ def hyperparameter_search_singleclass(
     train_csv: List[str] = ["data/train.train.csv"],
     test_csv: str = "data/train.test.csv",
     label: int = 0,
+    class_weights: bool = True,
     model_checkpoint: str = "deepset/gbert-base",
     output_dir: str = "models/hyperparameter_search_singleclass/",
     max_length: int = None,
@@ -170,6 +199,8 @@ def hyperparameter_search_singleclass(
     logger.info(f"Start singleclass training.")
     output_dir += (
         model_checkpoint.replace("/", "_")
+        + "_class_weights="
+        + str(class_weights)
         + "_label="
         + str(label)
         + "_languages="
@@ -205,14 +236,27 @@ def hyperparameter_search_singleclass(
     logger.info(f"Dataset sample: {train_dataset[0]}")
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
-    trainer = Trainer(
-        model_init=model_init,
-        args=args,
-        train_dataset=train_dataset,
-        eval_dataset=test_dataset,
-        tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
-    )
+    if class_weights == True:
+        if label == 0:
+            trainer = TrainerWithClassWeightsToxic(
+                model_init=model_init,
+                args=args,
+                train_dataset=train_dataset,
+                eval_dataset=test_dataset,
+                tokenizer=tokenizer,
+                compute_metrics=compute_metrics,
+            )
+        else:
+            raise NotImplementedError()
+    else:
+        trainer = Trainer(
+            model_init=model_init,
+            args=args,
+            train_dataset=train_dataset,
+            eval_dataset=test_dataset,
+            tokenizer=tokenizer,
+            compute_metrics=compute_metrics,
+        )
 
     logger.info("Start the hyperparameter search.")
     best_run = trainer.hyperparameter_search(n_trials=10, direction="maximize")
