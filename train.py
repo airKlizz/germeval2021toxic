@@ -23,7 +23,7 @@ def multiclass(
     batch_size: int = 16,
     learning_rate: float = 2e-5,
     nb_epoch: int = 5,
-    max_length: str = None,
+    max_length: int = None,
 ):
     logger.info(f"Start multiclass training.")
     output_dir += (
@@ -91,7 +91,7 @@ def singleclass(
     gradient_accumulation_steps: int = 1,
     learning_rate: float = 2e-5,
     nb_epoch: int = 5,
-    max_length: str = None,
+    max_length: int = None,
 ):
     logger.info(f"Start singleclass training.")
     output_dir += (
@@ -165,7 +165,7 @@ def hyperparameter_search_singleclass(
     label: int = 0,
     model_checkpoint: str = "deepset/gbert-base",
     output_dir: str = "models/hyperparameter_search_singleclass/",
-    max_length: str = None,
+    max_length: int = None,
 ):
     logger.info(f"Start singleclass training.")
     output_dir += (
