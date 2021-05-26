@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 import typer
-from datasets import load_dataset
+from datasets import load_dataset, load_metric
 from transformers import AutoTokenizer
 
 app = typer.Typer()
@@ -54,7 +54,7 @@ def load(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None,
     dataset = data["train"]
     if preprocess:
         return preprocess_dataset(dataset, model_checkpoint, num_labels, label, max_length)
-    return dataset
+    return dataset.shuffle(seed=42)
 
 
 def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None, max_length=None):
@@ -118,6 +118,34 @@ def stats(csv: str, model_checkpoint: str):
         "\nFactclaiming: ",
         np.array(factclaiming_labels).mean(),
     )
+    
+@app.command()
+def random_baseline(csv: str):
+    if isinstance(csv, str):
+        csv = [csv]
+    csv = list(csv)
+    data = load_dataset("csv", data_files=csv)
+    dataset = data["train"]
+    toxic_labels = []
+    engaging_labels = []
+    factclaiming_labels = []
+    random_predictions = []
+    for entry in dataset:
+        toxic_labels.append(entry["Sub1_Toxic"])
+        engaging_labels.append(entry["Sub2_Engaging"])
+        factclaiming_labels.append(entry["Sub3_FactClaiming"])
+        random_predictions.append(random.randint(0, 1))
+        #random_predictions.append(0)
+    metric = load_metric("metrics/singleclass.py")
+    print(
+        "Toxic: ",
+        metric.compute(predictions=random_predictions, references=toxic_labels),
+        "\nEngaging: ",
+        metric.compute(predictions=random_predictions, references=engaging_labels),
+        "\nFactclaiming: ",
+        metric.compute(predictions=random_predictions, references=factclaiming_labels),
+    )
+    
 
 
 if __name__ == "__main__":
