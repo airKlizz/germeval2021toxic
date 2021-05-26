@@ -53,7 +53,7 @@ def load(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None,
     data = load_dataset("csv", data_files=csv)
     dataset = data["train"]
     if preprocess:
-        return preprocess_dataset(dataset, model_checkpoint, num_labels, label, max_length)
+        return preprocess_dataset(dataset, model_checkpoint, num_labels, label, max_length).shuffle(seed=42)
     return dataset.shuffle(seed=42)
 
 
