@@ -47,7 +47,7 @@ def multiclass(
         num_train_epochs=nb_epoch,
         weight_decay=0.01,
         load_best_model_at_end=True,
-        metric_for_best_model="accuracy",
+        metric_for_best_model="f1",
         logging_dir="./logs",
         logging_steps=10,
     )
@@ -120,7 +120,7 @@ def singleclass(
         num_train_epochs=nb_epoch,
         weight_decay=0.01,
         load_best_model_at_end=True,
-        metric_for_best_model="accuracy",
+        metric_for_best_model="f1",
         logging_dir="./logs",
         logging_steps=10,
     )
@@ -183,7 +183,7 @@ def hyperparameter_search_singleclass(
         output_dir=output_dir,
         evaluation_strategy="epoch",
         load_best_model_at_end=True,
-        metric_for_best_model="accuracy",
+        metric_for_best_model="f1",
         logging_dir="./logs",
         logging_steps=10,
     )
