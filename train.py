@@ -23,6 +23,7 @@ def multiclass(
     batch_size: int = 16,
     learning_rate: float = 2e-5,
     nb_epoch: int = 5,
+    max_length: str = None,
 ):
     logger.info(f"Start multiclass training.")
     output_dir += (
@@ -59,8 +60,8 @@ def multiclass(
         return metric.compute(predictions=predictions.astype("int32"), references=labels.astype("int32"))
 
     logger.info("Load and preprocess the dataset.")
-    train_dataset = load(train_csv, model_checkpoint, preprocess=True)
-    test_dataset = load(test_csv, model_checkpoint, preprocess=True)
+    train_dataset = load(train_csv, model_checkpoint, preprocess=True, max_length=max_length)
+    test_dataset = load(test_csv, model_checkpoint, preprocess=True, max_length=max_length)
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
     trainer = Trainer(
@@ -90,6 +91,7 @@ def singleclass(
     gradient_accumulation_steps: int = 1,
     learning_rate: float = 2e-5,
     nb_epoch: int = 5,
+    max_length: str = None,
 ):
     logger.info(f"Start singleclass training.")
     output_dir += (
@@ -133,8 +135,10 @@ def singleclass(
     logger.info("Load and preprocess the dataset.")
     logger.debug(f"train_csv: {train_csv}")
     logger.debug(f"test_csv: {test_csv}")
-    train_dataset = load(train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
-    test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
+    train_dataset = load(
+        train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length
+    )
+    test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
@@ -152,7 +156,8 @@ def singleclass(
 
     logger.info("Start the evaluation.")
     trainer.evaluate()
-    
+
+
 @app.command()
 def hyperparameter_search_singleclass(
     train_csv: List[str] = ["data/train.train.csv"],
@@ -160,6 +165,7 @@ def hyperparameter_search_singleclass(
     label: int = 0,
     model_checkpoint: str = "deepset/gbert-base",
     output_dir: str = "models/hyperparameter_search_singleclass/",
+    max_length: str = None,
 ):
     logger.info(f"Start singleclass training.")
     output_dir += (
@@ -192,8 +198,10 @@ def hyperparameter_search_singleclass(
     logger.info("Load and preprocess the dataset.")
     logger.debug(f"train_csv: {train_csv}")
     logger.debug(f"test_csv: {test_csv}")
-    train_dataset = load(train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
-    test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label)
+    train_dataset = load(
+        train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length
+    )
+    test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
@@ -210,7 +218,7 @@ def hyperparameter_search_singleclass(
     best_run = trainer.hyperparameter_search(n_trials=10, direction="maximize")
 
     logger.info(f"Best run: {best_run}")
-    
+
     for n, v in best_run.hyperparameters.items():
         setattr(trainer.args, n, v)
 

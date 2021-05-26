@@ -28,23 +28,23 @@ def split(train_ratio, train_csv, train_train_csv, train_test_csv, seed):
             f.write("\n")
 
 
-def load(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None):
+def load(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None, max_length=None):
     if isinstance(csv, str):
         csv = [csv]
-    csv = list(csv)        
+    csv = list(csv)
     data = load_dataset("csv", data_files=csv)
     dataset = data["train"]
     if preprocess:
-        return preprocess_dataset(dataset, model_checkpoint, num_labels, label)
+        return preprocess_dataset(dataset, model_checkpoint, num_labels, label, max_length)
     return dataset
 
 
-def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None):
+def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None, max_length=None):
 
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
     def preprocess_function(examples):
-        output = tokenizer(examples["comment_text"], padding="max_length", truncation=True)
+        output = tokenizer(examples["comment_text"], max_length=max_length, padding="max_length", truncation=True)
         toxic = examples["Sub1_Toxic"]
         engaging = examples["Sub2_Engaging"]
         factclaiming = examples["Sub3_FactClaiming"]

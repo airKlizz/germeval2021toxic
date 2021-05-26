@@ -1,7 +1,7 @@
 import pandas as pd
 import typer
 from tqdm import tqdm
-from transformers import pipeline, AutoTokenizer
+from transformers import AutoTokenizer, pipeline
 
 app = typer.Typer()
 
