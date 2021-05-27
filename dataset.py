@@ -118,7 +118,8 @@ def stats(csv: str, model_checkpoint: str):
         "\nFactclaiming: ",
         np.array(factclaiming_labels).mean(),
     )
-    
+
+
 @app.command()
 def random_baseline(csv: str):
     if isinstance(csv, str):
@@ -135,7 +136,7 @@ def random_baseline(csv: str):
         engaging_labels.append(entry["Sub2_Engaging"])
         factclaiming_labels.append(entry["Sub3_FactClaiming"])
         random_predictions.append(random.randint(0, 1))
-        #random_predictions.append(0)
+        # random_predictions.append(0)
     metric = load_metric("metrics/singleclass.py")
     print(
         "Toxic: ",
@@ -145,7 +146,6 @@ def random_baseline(csv: str):
         "\nFactclaiming: ",
         metric.compute(predictions=random_predictions, references=factclaiming_labels),
     )
-    
 
 
 if __name__ == "__main__":

@@ -1,17 +1,31 @@
 import random
-from typing import List, Union
+from typing import List
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import typer
 from datasets import load_metric
 from loguru import logger
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          Trainer, TrainingArguments)
+                          MT5ForConditionalGeneration, T5Tokenizer, Trainer,
+                          TrainingArguments)
 
 from dataset import load
 
 app = typer.Typer()
+
+
+class MT5Trainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.pop("labels")
+        outputs = model(**inputs)
+        logits = outputs.logits
+        logits = logits.squeeze(1)
+        logits = logits[:, [375, 36339]]  # no=375 yes=36339
+        loss_fct = torch.nn.CrossEntropyLoss()
+        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
 
 
 class TrainerWithClassWeightsToxic(Trainer):
@@ -19,6 +33,20 @@ class TrainerWithClassWeightsToxic(Trainer):
         labels = inputs.pop("labels")
         outputs = model(**inputs)
         logits = outputs.logits
+        loss_fct = torch.nn.CrossEntropyLoss(
+            weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
+        )
+        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        return (loss, outputs) if return_outputs else loss
+
+
+class MT5TrainerWithClassWeightsToxic(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.pop("labels")
+        outputs = model(**inputs)
+        logits = outputs.logits
+        logits = logits.squeeze(1)
+        logits = logits[:, [375, 36339]]  # no=375 yes=36339
         loss_fct = torch.nn.CrossEntropyLoss(
             weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
         )
@@ -99,6 +127,7 @@ def singleclass(
     label: int = 0,
     class_weights: bool = True,
     model_checkpoint: str = "deepset/gbert-base",
+    model_type: str = "auto",
     output_dir: str = "models/singleclass/",
     batch_size: int = 16,
     gradient_accumulation_steps: int = 1,
@@ -123,7 +152,13 @@ def singleclass(
         + str(nb_epoch)
     )
     logger.info(f"Load the model: {model_checkpoint}.")
-    model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=2)
+
+    if model_type == "auto":
+        model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=2)
+    elif model_type == "t5":
+        model = MT5ForConditionalGeneration.from_pretrained(model_checkpoint)
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
     args = TrainingArguments(
         output_dir=output_dir,
@@ -142,10 +177,25 @@ def singleclass(
 
     metric = load_metric("metrics/singleclass.py")
 
-    def compute_metrics(eval_pred):
-        predictions, labels = eval_pred
-        predictions = np.argmax(predictions, axis=1)
-        return metric.compute(predictions=predictions, references=labels)
+    if model_type == "auto":
+
+        def compute_metrics(eval_pred):
+            predictions, labels = eval_pred
+            predictions = np.argmax(predictions, axis=1)
+            return metric.compute(predictions=predictions, references=labels)
+
+    elif model_type == "t5":
+
+        def compute_metrics(eval_pred):
+            logits, labels = eval_pred
+            logits = logits.squeeze(1)
+            selected_logits = logits[:, [375, 36339]]  # no=375 yes=36339
+            probs = F.softmax(selected_logits, dim=1)
+            predictions = np.argmax(probs, axis=1)
+            return metric.compute(predictions=predictions, references=labels)
+
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
     logger.info("Load and preprocess the dataset.")
     logger.debug(f"train_csv: {train_csv}")
@@ -155,11 +205,28 @@ def singleclass(
     )
     test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    if model_type == "auto":
+        tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    elif model_type == "t5":
+        tokenizer = T5Tokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
-    if class_weights == True:
-        if label == 0:
-            trainer = TrainerWithClassWeightsToxic(
+    if model_type == "auto":
+        if class_weights == True:
+            if label == 0:
+                trainer = TrainerWithClassWeightsToxic(
+                    model,
+                    args,
+                    train_dataset=train_dataset,
+                    eval_dataset=test_dataset,
+                    tokenizer=tokenizer,
+                    compute_metrics=compute_metrics,
+                )
+            else:
+                raise NotImplementedError()
+        else:
+            trainer = Trainer(
                 model,
                 args,
                 train_dataset=train_dataset,
@@ -167,17 +234,30 @@ def singleclass(
                 tokenizer=tokenizer,
                 compute_metrics=compute_metrics,
             )
+    elif model_type == "t5":
+        if class_weights == True:
+            if label == 0:
+                trainer = MT5TrainerWithClassWeightsToxic(
+                    model,
+                    args,
+                    train_dataset=train_dataset,
+                    eval_dataset=test_dataset,
+                    tokenizer=tokenizer,
+                    compute_metrics=compute_metrics,
+                )
+            else:
+                raise NotImplementedError()
         else:
-            raise NotImplementedError()
+            trainer = MT5Trainer(
+                model,
+                args,
+                train_dataset=train_dataset,
+                eval_dataset=test_dataset,
+                tokenizer=tokenizer,
+                compute_metrics=compute_metrics,
+            )
     else:
-        trainer = Trainer(
-            model,
-            args,
-            train_dataset=train_dataset,
-            eval_dataset=test_dataset,
-            tokenizer=tokenizer,
-            compute_metrics=compute_metrics,
-        )
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
     logger.info("Start the training.")
     trainer.train()
@@ -193,6 +273,7 @@ def hyperparameter_search_singleclass(
     label: int = 0,
     class_weights: bool = True,
     model_checkpoint: str = "deepset/gbert-base",
+    model_type: str = "auto",
     output_dir: str = "models/hyperparameter_search_singleclass/",
     max_length: int = None,
 ):
@@ -207,8 +288,18 @@ def hyperparameter_search_singleclass(
         + "+".join(train_csv).replace("data/", "").replace("/", "_")
     )
 
-    def model_init():
-        return AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=2)
+    if model_type == "auto":
+
+        def model_init():
+            return AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=2)
+
+    elif model_type == "t5":
+
+        def model_init():
+            return MT5ForConditionalGeneration.from_pretrained(model_checkpoint)
+
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
     args = TrainingArguments(
         output_dir=output_dir,
@@ -221,10 +312,25 @@ def hyperparameter_search_singleclass(
 
     metric = load_metric("metrics/singleclass.py")
 
-    def compute_metrics(eval_pred):
-        predictions, labels = eval_pred
-        predictions = np.argmax(predictions, axis=1)
-        return metric.compute(predictions=predictions, references=labels)
+    if model_type == "auto":
+
+        def compute_metrics(eval_pred):
+            predictions, labels = eval_pred
+            predictions = np.argmax(predictions, axis=1)
+            return metric.compute(predictions=predictions, references=labels)
+
+    elif model_type == "t5":
+
+        def compute_metrics(eval_pred):
+            logits, labels = eval_pred
+            logits = logits.squeeze(1)
+            selected_logits = logits[:, [375, 36339]]  # no=375 yes=36339
+            probs = F.softmax(selected_logits, dim=1)
+            predictions = np.argmax(probs, axis=1)
+            return metric.compute(predictions=predictions, references=labels)
+
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
     logger.info("Load and preprocess the dataset.")
     logger.debug(f"train_csv: {train_csv}")
@@ -234,11 +340,28 @@ def hyperparameter_search_singleclass(
     )
     test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    if model_type == "auto":
+        tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    elif model_type == "t5":
+        tokenizer = T5Tokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
-    if class_weights == True:
-        if label == 0:
-            trainer = TrainerWithClassWeightsToxic(
+    if model_type == "auto":
+        if class_weights == True:
+            if label == 0:
+                trainer = TrainerWithClassWeightsToxic(
+                    model_init=model_init,
+                    args=args,
+                    train_dataset=train_dataset,
+                    eval_dataset=test_dataset,
+                    tokenizer=tokenizer,
+                    compute_metrics=compute_metrics,
+                )
+            else:
+                raise NotImplementedError()
+        else:
+            trainer = Trainer(
                 model_init=model_init,
                 args=args,
                 train_dataset=train_dataset,
@@ -246,17 +369,30 @@ def hyperparameter_search_singleclass(
                 tokenizer=tokenizer,
                 compute_metrics=compute_metrics,
             )
+    elif model_type == "t5":
+        if class_weights == True:
+            if label == 0:
+                trainer = MT5TrainerWithClassWeightsToxic(
+                    model_init=model_init,
+                    args=args,
+                    train_dataset=train_dataset,
+                    eval_dataset=test_dataset,
+                    tokenizer=tokenizer,
+                    compute_metrics=compute_metrics,
+                )
+            else:
+                raise NotImplementedError()
         else:
-            raise NotImplementedError()
+            trainer = MT5Trainer(
+                model_init=model_init,
+                args=args,
+                train_dataset=train_dataset,
+                eval_dataset=test_dataset,
+                tokenizer=tokenizer,
+                compute_metrics=compute_metrics,
+            )
     else:
-        trainer = Trainer(
-            model_init=model_init,
-            args=args,
-            train_dataset=train_dataset,
-            eval_dataset=test_dataset,
-            tokenizer=tokenizer,
-            compute_metrics=compute_metrics,
-        )
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
 
     logger.info("Start the hyperparameter search.")
     best_run = trainer.hyperparameter_search(n_trials=10, direction="maximize")
