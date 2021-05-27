@@ -1,6 +1,7 @@
 import random
 
 import numpy as np
+import torch
 import typer
 from datasets import load_dataset, load_metric
 from transformers import AutoTokenizer
@@ -46,23 +47,25 @@ def split(train_ratio, train_csv, train_train_csv, train_test_csv, seed):
             f.write("\n")
 
 
-def load(csv, model_checkpoint=None, preprocess=False, num_labels=3, label=None, max_length=None):
+def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, num_labels=3, label=None, max_length=None):
     if isinstance(csv, str):
         csv = [csv]
     csv = list(csv)
     data = load_dataset("csv", data_files=csv)
     dataset = data["train"]
     if preprocess:
-        return preprocess_dataset(dataset, model_checkpoint, num_labels, label, max_length).shuffle(seed=42)
+        return preprocess_dataset(dataset, model_checkpoint, model_type, num_labels, label, max_length).shuffle(seed=42)
     return dataset.shuffle(seed=42)
 
 
-def preprocess_dataset(dataset, model_checkpoint, num_labels=3, label=None, max_length=None):
+def preprocess_dataset(dataset, model_checkpoint, model_type, num_labels=3, label=None, max_length=None):
 
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
     def preprocess_function(examples):
         output = tokenizer(examples["comment_text"], max_length=max_length, padding="max_length", truncation=True)
+        if model_type == "t5":
+            output["decoder_input_ids"] = torch.ones(output["input_ids"].size(0), 1) * tokenizer.pad_token_id
         toxic = examples["Sub1_Toxic"]
         engaging = examples["Sub2_Engaging"]
         factclaiming = examples["Sub3_FactClaiming"]
