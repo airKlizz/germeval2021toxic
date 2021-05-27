@@ -324,6 +324,9 @@ def hyperparameter_search_singleclass(
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
             print(logits)
+            print(torch.tensor(logits))
+            print(logits.shape)
+            print(torch.tensor(logits).shape)
             logits = torch.tensor(logits).squeeze(1)
             selected_logits = logits[:, [375, 36339]]  # no=375 yes=36339
             probs = F.softmax(selected_logits, dim=1)
