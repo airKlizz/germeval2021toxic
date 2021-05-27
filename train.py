@@ -354,6 +354,7 @@ def hyperparameter_search_singleclass(
     if model_type == "auto":
         if class_weights == True:
             if label == 0:
+                logger.info("Using TrainerWithClassWeightsToxic")
                 trainer = TrainerWithClassWeightsToxic(
                     model_init=model_init,
                     args=args,
@@ -365,6 +366,7 @@ def hyperparameter_search_singleclass(
             else:
                 raise NotImplementedError()
         else:
+            logger.info("Using Trainer")
             trainer = Trainer(
                 model_init=model_init,
                 args=args,
@@ -376,6 +378,7 @@ def hyperparameter_search_singleclass(
     elif model_type == "t5":
         if class_weights == True:
             if label == 0:
+                logger.info("Using MT5TrainerWithClassWeightsToxic")
                 trainer = MT5TrainerWithClassWeightsToxic(
                     model_init=model_init,
                     args=args,
@@ -387,6 +390,7 @@ def hyperparameter_search_singleclass(
             else:
                 raise NotImplementedError()
         else:
+            logger.info("Using MT5Trainer")
             trainer = MT5Trainer(
                 model_init=model_init,
                 args=args,
