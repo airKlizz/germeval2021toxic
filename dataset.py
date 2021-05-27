@@ -65,7 +65,7 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, num_labels=3, labe
     def preprocess_function(examples):
         output = tokenizer(examples["comment_text"], max_length=max_length, padding="max_length", truncation=True)
         if model_type == "t5":
-            output["decoder_input_ids"] = torch.ones(output["input_ids"].size(0), 1) * tokenizer.pad_token_id
+            output["decoder_input_ids"] = [[tokenizer.pad_token_id] for _ in range(len(output["input_ids"]))]
         toxic = examples["Sub1_Toxic"]
         engaging = examples["Sub2_Engaging"]
         factclaiming = examples["Sub3_FactClaiming"]
