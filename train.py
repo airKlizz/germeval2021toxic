@@ -201,9 +201,9 @@ def singleclass(
     logger.debug(f"train_csv: {train_csv}")
     logger.debug(f"test_csv: {test_csv}")
     train_dataset = load(
-        train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length
+        train_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
     )
-    test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length)
+    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
@@ -336,9 +336,9 @@ def hyperparameter_search_singleclass(
     logger.debug(f"train_csv: {train_csv}")
     logger.debug(f"test_csv: {test_csv}")
     train_dataset = load(
-        train_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length
+        train_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
     )
-    test_dataset = load(test_csv, model_checkpoint, preprocess=True, num_labels=1, label=label, max_length=max_length)
+    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
