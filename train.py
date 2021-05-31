@@ -326,6 +326,7 @@ def hyperparameter_search_singleclass(
             logits, labels = eval_pred
             print("LOGITS")
             print(type(logits))
+            print(len(logits))
             labels = np.where(labels == 375, 0, labels) 
             labels = np.where(labels == 36339, 1, labels) 
             logits = torch.tensor(logits[0]).squeeze(1)
