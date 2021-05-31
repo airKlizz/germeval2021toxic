@@ -16,16 +16,16 @@ from dataset import load
 app = typer.Typer()
 
 
-class MT5Trainer(Trainer):
-    def compute_loss(self, model, inputs, return_outputs=False):
-        labels = inputs.pop("labels")
-        outputs = model(**inputs)
-        logits = outputs.logits
-        logits = logits.squeeze(1)
-        logits = logits[:, [375, 36339]]  # no=375 yes=36339
-        loss_fct = torch.nn.CrossEntropyLoss()
-        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
-        return (loss, outputs) if return_outputs else loss
+# class MT5Trainer(Trainer):
+#     def compute_loss(self, model, inputs, return_outputs=False):
+#         labels = inputs.pop("labels")
+#         outputs = model(**inputs)
+#         logits = outputs.logits
+#         logits = logits.squeeze(1)
+#         logits = logits[:, [375, 36339]]  # no=375 yes=36339
+#         loss_fct = torch.nn.CrossEntropyLoss()
+#         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+#         return (loss, outputs) if return_outputs else loss
 
 
 class TrainerWithClassWeightsToxic(Trainer):
@@ -45,12 +45,11 @@ class MT5TrainerWithClassWeightsToxic(Trainer):
         labels = inputs.pop("labels")
         outputs = model(**inputs)
         logits = outputs.logits
-        logits = logits.squeeze(1)
-        logits = logits[:, [375, 36339]]  # no=375 yes=36339
-        loss_fct = torch.nn.CrossEntropyLoss(
-            weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
-        )
-        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        weight = torch.zeros(logits.size(-1)).to(logits.device)
+        weight[375] = 0.34586929716399506
+        weight[36339] = 0.6541307028360049
+        loss_fct = torch.nn.CrossEntropyLoss(weight=weight, ignore_index=-100)
+        loss = loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
 
 
@@ -203,7 +202,9 @@ def singleclass(
     train_dataset = load(
         train_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
     )
-    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length)
+    test_dataset = load(
+        test_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
+    )
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
@@ -248,7 +249,7 @@ def singleclass(
             else:
                 raise NotImplementedError()
         else:
-            trainer = MT5Trainer(
+            trainer = Trainer(
                 model,
                 args,
                 train_dataset=train_dataset,
@@ -338,7 +339,9 @@ def hyperparameter_search_singleclass(
     train_dataset = load(
         train_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
     )
-    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length)
+    test_dataset = load(
+        test_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
+    )
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
@@ -387,7 +390,7 @@ def hyperparameter_search_singleclass(
                 raise NotImplementedError()
         else:
             logger.info("Using MT5Trainer")
-            trainer = MT5Trainer(
+            trainer = Trainer(
                 model_init=model_init,
                 args=args,
                 train_dataset=train_dataset,

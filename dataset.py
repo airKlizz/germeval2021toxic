@@ -54,7 +54,9 @@ def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, num_la
     data = load_dataset("csv", data_files=csv)
     dataset = data["train"]
     if preprocess:
-        return preprocess_dataset(dataset, model_checkpoint, model_type, num_labels, label, max_length).shuffle(seed=42)
+        return preprocess_dataset(dataset, model_checkpoint, model_type, num_labels, label, max_length).shuffle(
+            seed=42
+        )
     return dataset.shuffle(seed=42)
 
 
@@ -75,16 +77,29 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, num_labels=3, labe
                 t = 1.0 if t == 1 else -1.0
                 e = 1.0 if e == 1 else -1.0
                 f = 1.0 if f == 1 else -1.0
-                labels.append([t, e, f])
+                if model_type == "t5":
+                    labels.append(
+                        "toxic " if t == 1.0 else "" + "engaging " if e == 1.0 else "" + "fact " if f == 1.0 else ""
+                    )
+                else:
+                    labels.append([t, e, f])
             elif num_labels == 1:
                 assert label is not None and (label == 0 or label == 1 or label == 2)
                 if label == 0:
-                    labels.append(t)
+                    if model_type == "t5":
+                        labels.append(36339 if t == 1 else 375)
+                    else:
+                        labels.append(t)
                 elif label == 1:
-                    labels.append(e)
+                    if model_type == "t5":
+                        labels.append(36339 if e == 1 else 375)
+                    else:
+                        labels.append(e)
                 else:
-                    labels.append(f)
-
+                    if model_type == "t5":
+                        labels.append(36339 if f == 1 else 375)
+                    else:
+                        labels.append(f)
             else:
                 raise NotImplementedError("Preprocessing method implemented only for 1 or 3 labels.")
         output["labels"] = labels
