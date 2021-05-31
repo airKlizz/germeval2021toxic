@@ -324,7 +324,8 @@ def hyperparameter_search_singleclass(
 
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
-            labels = [0 if label == 375 else 1 for label in labels]
+            labels = np.where(labels == 375, 0, labels) 
+            labels = np.where(labels == 36339, 1, labels) 
             logits = torch.tensor(logits[0]).squeeze(1)
             selected_logits = logits[:, [375, 36339]]  # no=375 yes=36339
             probs = F.softmax(selected_logits, dim=1)
