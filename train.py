@@ -187,10 +187,18 @@ def singleclass(
 
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
-            logits = logits.squeeze(1)
+            print("LOGITS")
+            print(type(logits))
+            print(len(logits))
+            print(type(logits[0]))
+            print(logits[0].shape)
+            print(torch.argmax(logits[0], dim=2))
+            labels = np.where(labels == 375, 0, labels) 
+            labels = np.where(labels == 36339, 1, labels) 
+            logits = torch.tensor(logits[0]).squeeze(1)
             selected_logits = logits[:, [375, 36339]]  # no=375 yes=36339
             probs = F.softmax(selected_logits, dim=1)
-            predictions = np.argmax(probs, axis=1)
+            predictions = np.argmax(probs.tolist(), axis=1)
             return metric.compute(predictions=predictions, references=labels)
 
     else:
@@ -216,6 +224,7 @@ def singleclass(
     if model_type == "auto":
         if class_weights == True:
             if label == 0:
+                logger.info("Using TrainerWithClassWeightsToxic")
                 trainer = TrainerWithClassWeightsToxic(
                     model,
                     args,
@@ -227,6 +236,7 @@ def singleclass(
             else:
                 raise NotImplementedError()
         else:
+            logger.info("Using Trainer")
             trainer = Trainer(
                 model,
                 args,
@@ -238,6 +248,7 @@ def singleclass(
     elif model_type == "t5":
         if class_weights == True:
             if label == 0:
+                logger.info("Using MT5TrainerWithClassWeightsToxic")
                 trainer = MT5TrainerWithClassWeightsToxic(
                     model,
                     args,
@@ -249,6 +260,7 @@ def singleclass(
             else:
                 raise NotImplementedError()
         else:
+            logger.info("Using MT5Trainer")
             trainer = Trainer(
                 model,
                 args,
@@ -327,6 +339,9 @@ def hyperparameter_search_singleclass(
             print("LOGITS")
             print(type(logits))
             print(len(logits))
+            print(type(logits[0]))
+            print(logits[0].shape)
+            print(torch.argmax(logits[0], dim=2))
             labels = np.where(labels == 375, 0, labels) 
             labels = np.where(labels == 36339, 1, labels) 
             logits = torch.tensor(logits[0]).squeeze(1)
