@@ -192,7 +192,7 @@ def singleclass(
             print(len(logits))
             print(type(logits[0]))
             print(logits[0].shape)
-            print(torch.argmax(logits[0], dim=2))
+            print(np.argmax(logits[0], axis=2))
             labels = np.where(labels == 375, 0, labels) 
             labels = np.where(labels == 36339, 1, labels) 
             logits = torch.tensor(logits[0]).squeeze(1)
