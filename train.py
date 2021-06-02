@@ -164,7 +164,7 @@ def singleclass(
         save_strategy="steps",
         save_steps=500,
         evaluation_strategy="steps",
-        eval_steps=500,
+        eval_steps=50,
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
@@ -196,10 +196,10 @@ def singleclass(
             print(type(logits[0]))
             print(logits[0].shape)
             print(np.argmax(logits[0], axis=2))
-            labels = np.where(labels == 375, 0, labels)
-            labels = np.where(labels == 36339, 1, labels)
+            labels = np.where(labels == 59006, 0, labels)
+            labels = np.where(labels == 112560, 1, labels)
             logits = torch.tensor(logits[0]).squeeze(1)
-            selected_logits = logits[:, [375, 36339]]  # no=375 yes=36339
+            selected_logits = logits[:, [59006, 112560]]
             probs = F.softmax(selected_logits, dim=1)
             predictions = np.argmax(probs.tolist(), axis=1)
             return metric.compute(predictions=predictions, references=labels)
