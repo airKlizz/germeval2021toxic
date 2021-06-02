@@ -40,7 +40,7 @@ def predict(
     if model_type == "auto":
 
         def get_predictions(outputs):
-            return np.argmax(outputs.logits.tolist(), axis=1)
+            return np.argmax(outputs.logits.tolist(), axis=1).tolist()
 
         def get_labels(labels):
             labels = labels.cpu()
