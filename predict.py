@@ -79,7 +79,9 @@ def predict(
     for batch in tqdm(dataloader, desc="In progress..."):
         batch = {k: v.to(device) for k, v in batch.items()}
         labels = get_labels(batch.pop("labels"))
+        print(labels)
         outputs = model(**batch)
+        print(outputs.logits)
         predictions = get_predictions(outputs)
         assert len(predictions) == len(labels)
         all_labels += labels
