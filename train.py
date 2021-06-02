@@ -191,11 +191,11 @@ def singleclass(
 
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
-            print("LOGITS")
-            #print(type(logits))
-            #print(len(logits))
-            #print(type(logits[0]))
-            #print(logits[0].shape)
+            # print("LOGITS")
+            # print(type(logits))
+            # print(len(logits))
+            # print(type(logits[0]))
+            # print(logits[0].shape)
             print(np.argmax(logits[0], axis=2))
             labels = np.where(labels == 59006, 0, labels)
             labels = np.where(labels == 112560, 1, labels)
