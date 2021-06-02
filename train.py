@@ -165,7 +165,7 @@ def singleclass(
         save_steps=500,
         evaluation_strategy="steps",
         eval_steps=250,
-        eval_accumulation_steps=128,
+        eval_accumulation_steps=100,
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
