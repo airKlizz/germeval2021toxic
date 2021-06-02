@@ -165,7 +165,7 @@ def singleclass(
         save_steps=500,
         evaluation_strategy="steps",
         eval_steps=250,
-        eval_accumulation_steps=100,
+        eval_accumulation_steps=128,
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
@@ -192,10 +192,10 @@ def singleclass(
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
             print("LOGITS")
-            print(type(logits))
-            print(len(logits))
-            print(type(logits[0]))
-            print(logits[0].shape)
+            #print(type(logits))
+            #print(len(logits))
+            #print(type(logits[0]))
+            #print(logits[0].shape)
             print(np.argmax(logits[0], axis=2))
             labels = np.where(labels == 59006, 0, labels)
             labels = np.where(labels == 112560, 1, labels)
