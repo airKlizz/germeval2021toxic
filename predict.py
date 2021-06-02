@@ -65,7 +65,7 @@ def predict(
     if model_type == "auto":
         columns = ["input_ids", "token_type_ids", "attention_mask", "labels"]
     elif model_type == "t5":
-        columns = ["input_ids", "token_type_ids", "attention_mask", "decoder_input_ids", "labels"]
+        columns = ["input_ids", "attention_mask", "decoder_input_ids", "labels"]
     else:
         raise NotImplementedError("Model type available: 'auto' or 't5'")
     dataset.set_format(type="torch", columns=columns)
