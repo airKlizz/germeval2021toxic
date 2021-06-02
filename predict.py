@@ -3,13 +3,11 @@ from typing import List
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 import typer
 from datasets import load_metric
 from loguru import logger
-from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          MT5ForConditionalGeneration, T5Tokenizer, Trainer,
-                          TrainingArguments)
+from transformers import (AutoModelForSequenceClassification,
+                          MT5ForConditionalGeneration)
 
 from dataset import load
 
@@ -87,3 +85,7 @@ def predict(
     stats = metric.compute(predictions=all_predictions, references=all_labels)
     print(stats)
     return stats
+
+
+if __name__ == "__main__":
+    app()
