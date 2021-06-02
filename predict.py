@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import typer
 from datasets import load_metric
 from loguru import logger
+from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
                           MT5ForConditionalGeneration)
 
