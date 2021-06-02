@@ -75,7 +75,7 @@ def predict(
 
     all_labels = []
     all_predictions = []
-    for batch in dataloader:
+    for batch in tqdm(dataloader, desc="In progress..."):
         batch = {k: v.to(device) for k, v in batch.items()}
         labels = get_labels(batch.pop("labels"))
         outputs = model(**batch)
