@@ -43,7 +43,10 @@ def predict(
             return np.argmax(outputs.logits.tolist(), axis=1)
 
         def get_labels(labels):
-            return labels
+            labels = labels.cpu()
+            labels = np.where(labels == -1.0, 0, labels)
+            labels = np.where(labels == 1.0, 1, labels)
+            return labels.tolist()
 
     elif model_type == "t5":
 
@@ -81,8 +84,8 @@ def predict(
         labels = get_labels(batch.pop("labels"))
         print(labels)
         outputs = model(**batch)
-        print(outputs.logits)
         predictions = get_predictions(outputs)
+        print(predictions)
         assert len(predictions) == len(labels)
         all_labels += labels
         all_predictions += predictions
