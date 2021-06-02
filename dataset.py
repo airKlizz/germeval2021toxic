@@ -1,10 +1,12 @@
 import random
 
 import numpy as np
+import pandas as pd
 import torch
 import typer
 from datasets import load_dataset, load_metric
-from transformers import AutoTokenizer
+from tqdm import tqdm
+from transformers import AutoTokenizer, T5Tokenizer
 
 app = typer.Typer()
 
@@ -23,85 +25,118 @@ def describe(l):
     }
 
 
-def split(train_ratio, train_csv, train_train_csv, train_test_csv, seed):
-    random.seed(seed)
-    with open(train_csv) as f:
-        data = f.read().split("\n")
-    header = data[0]
-    data = data[1:]
-    random.shuffle(data)
-    train_data = data[: int(len(data) * train_ratio)]
-    test_data = data[int(len(data) * train_ratio) :]
-    assert len(train_data) + len(test_data) == len(data)
-    with open(train_train_csv, "w") as f:
-        f.write(header)
-        f.write("\n")
-        for elem in train_data:
-            f.write(elem)
-            f.write("\n")
-    with open(train_test_csv, "w") as f:
-        f.write(header)
-        f.write("\n")
-        for elem in test_data:
-            f.write(elem)
-            f.write("\n")
+def split(train_ratio, train_csv, train_train_csv, train_test_csv):
+    df = pd.read_csv(train_csv)
+    df = df.sample(frac=1)
+    train_data = df[: int(len(df) * train_ratio)]
+    test_data = df[int(len(df) * train_ratio) :]
+    train_data.to_csv(train_train_csv)
+    test_data.to_csv(train_test_csv)
 
 
-def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, num_labels=3, label=None, max_length=None):
+def oversampling(train_train_csv, train_train_oversampling_csv, label):
+    df = pd.read_csv(train_train_csv)
+    columns = df.columns
+    label_idx = columns.to_list().index(label)
+    data = df.values.tolist()
+    data_label_0 = []
+    data_label_1 = []
+    for d in tqdm(data):
+        if d[label_idx] == 0:
+            data_label_0.append(d)
+        else:
+            assert d[label_idx] == 1
+            data_label_1.append(d)
+    assert len(data_label_0) >= len(data_label_1), "Not implemented when label_0 < label_1"
+    print("Number of label 0: ", len(data_label_0))
+    print("Number of label 1: ", len(data_label_1))
+    new_data_label_1 = []
+    for _ in range(int(len(data_label_0) / len(data_label_1))):
+        new_data_label_1 += data_label_1.copy()
+    # new_data_label_1 += data_label_1.copy()[:len(data_label_0)%len(data_label_1)]
+    new_data = data_label_0 + new_data_label_1
+    new_df = pd.DataFrame(columns=columns, data=new_data).sample(frac=1)
+    new_df.to_csv(train_train_oversampling_csv)
+
+
+def undersampling(train_train_csv, train_train_undersampling_csv, label):
+    df = pd.read_csv(train_train_csv)
+    columns = df.columns
+    label_idx = columns.to_list().index(label)
+    data = df.values.tolist()
+    data_label_0 = []
+    data_label_1 = []
+    for d in tqdm(data):
+        if d[label_idx] == 0:
+            data_label_0.append(d)
+        else:
+            assert d[label_idx] == 1
+            data_label_1.append(d)
+    assert len(data_label_0) >= len(data_label_1), "Not implemented when label_0 < label_1"
+    print("Number of label 0: ", len(data_label_0))
+    print("Number of label 1: ", len(data_label_1))
+    new_data_label_0 = random.sample(data_label_0, len(data_label_1))
+    new_data = new_data_label_0 + data_label_1
+    new_df = pd.DataFrame(columns=columns, data=new_data).sample(frac=1)
+    new_df.to_csv(train_train_undersampling_csv)
+
+
+def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, labels=None, max_length=None):
     if isinstance(csv, str):
         csv = [csv]
     csv = list(csv)
     data = load_dataset("csv", data_files=csv)
     dataset = data["train"]
     if preprocess:
-        return preprocess_dataset(dataset, model_checkpoint, model_type, num_labels, label, max_length).shuffle(
-            seed=42
-        )
+        return preprocess_dataset(dataset, model_checkpoint, model_type, labels, max_length).shuffle(seed=42)
     return dataset.shuffle(seed=42)
 
 
-def preprocess_dataset(dataset, model_checkpoint, model_type, num_labels=3, label=None, max_length=None):
+def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_length=None):
 
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    if model_type == "t5":
+        tokenizer = T5Tokenizer.from_pretrained(model_checkpoint)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
-    def preprocess_function(examples):
-        output = tokenizer(examples["comment_text"], max_length=max_length, padding="max_length", truncation=True)
+    def preprocess_function(examples, labels=labels):
+        # input
         if model_type == "t5":
+            output = tokenizer(
+                ["speech review: " + t for t in examples["comment_text"]],
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+            )
             output["decoder_input_ids"] = [[tokenizer.pad_token_id] for _ in range(len(output["input_ids"]))]
-        toxic = examples["Sub1_Toxic"]
-        engaging = examples["Sub2_Engaging"]
-        factclaiming = examples["Sub3_FactClaiming"]
+        else:
+            output = tokenizer(examples["comment_text"], max_length=max_length, padding="max_length", truncation=True)
+
+        # label
+        def get_label(label):
+            if label == "Sub1_Toxic" or label == "toxic":
+                return [59006, 112560]
+            if label == "Sub2_Engaging":
+                return [59006, 46151]
+            if label == "Sub3_FactClaiming":
+                return [59006, 12558]
+            raise ValueError(f"label [{label}] not found.")
+
+        idx_to_label = {idx: get_label(label) for idx, label in enumerate(labels)}
+
+        labels_values = []
+        for label in labels:
+            labels_values.append(examples[label])
+
         labels = []
-        for t, e, f in zip(toxic, engaging, factclaiming):
-            if num_labels == 3:
-                t = 1.0 if t == 1 else -1.0
-                e = 1.0 if e == 1 else -1.0
-                f = 1.0 if f == 1 else -1.0
-                if model_type == "t5":
-                    labels.append(
-                        "toxic " if t == 1.0 else "" + "engaging " if e == 1.0 else "" + "fact " if f == 1.0 else ""
-                    )
-                else:
-                    labels.append([t, e, f])
-            elif num_labels == 1:
-                assert label is not None and (label == 0 or label == 1 or label == 2)
-                if label == 0:
-                    if model_type == "t5":
-                        labels.append(36339 if t == 1 else 375)
-                    else:
-                        labels.append(t)
-                elif label == 1:
-                    if model_type == "t5":
-                        labels.append(36339 if e == 1 else 375)
-                    else:
-                        labels.append(e)
-                else:
-                    if model_type == "t5":
-                        labels.append(36339 if f == 1 else 375)
-                    else:
-                        labels.append(f)
+        for values in zip(*labels_values):
+            if model_type == "t5":
+                values = [idx_to_label[idx][v] for idx, v in enumerate(values)]
+                labels.append(values if len(values) > 1 else values[0])
             else:
-                raise NotImplementedError("Preprocessing method implemented only for 1 or 3 labels.")
+                values = [1.0 if v == 1 else -1.0 for v in values]
+                labels.append(values if len(values) > 1 else values[0])
+
         output["labels"] = labels
         return output
 
