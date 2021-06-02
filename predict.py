@@ -52,6 +52,7 @@ def predict(
             return np.argmax(probs.tolist(), axis=1).tolist()
 
         def get_labels(labels):
+            labels = labels.cpu()
             labels = np.where(labels == 59006, 0, labels)
             labels = np.where(labels == 112560, 1, labels)
             return labels.tolist()
