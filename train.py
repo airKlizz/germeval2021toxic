@@ -153,6 +153,7 @@ def singleclass(
         + "_epoch="
         + str(nb_epoch)
     )
+    output_dir = output_dir[:256]
     logger.info(f"Load the model: {model_checkpoint}.")
 
     if model_type == "auto":
