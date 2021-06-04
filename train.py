@@ -197,7 +197,7 @@ def singleclass(
             # print(len(logits))
             # print(type(logits[0]))
             # print(logits[0].shape)
-            print(np.argmax(logits[0], axis=2))
+            # print(np.argmax(logits[0], axis=2))
             labels = np.where(labels == 59006, 0, labels)
             labels = np.where(labels == 112560, 1, labels)
             logits = torch.tensor(logits[0]).squeeze(1)
@@ -279,7 +279,8 @@ def singleclass(
     trainer.train()
 
     logger.info("Start the evaluation.")
-    trainer.evaluate()
+    metrics = trainer.evaluate()
+    logger.info(metrics)
 
 
 @app.command()
@@ -436,7 +437,8 @@ def hyperparameter_search_singleclass(
     trainer.train()
 
     logger.info("Start the evaluation.")
-    trainer.evaluate()
+    metrics = trainer.evaluate()
+    logger.info(metrics)
 
 
 if __name__ == "__main__":
