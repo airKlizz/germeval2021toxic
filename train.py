@@ -134,6 +134,8 @@ def singleclass(
     learning_rate: float = 5e-5,
     nb_epoch: int = 3,
     max_length: int = 256,
+    eval_steps: int = 250,
+    save_steps: int = 500,
 ):
     logger.info(f"Start singleclass training.")
     output_dir += (
@@ -163,9 +165,9 @@ def singleclass(
     args = TrainingArguments(
         output_dir=output_dir,
         save_strategy="steps",
-        save_steps=500,
+        save_steps=save_steps,
         evaluation_strategy="steps",
-        eval_steps=250,
+        eval_steps=eval_steps,
         eval_accumulation_steps=eval_accumulation_steps,
         learning_rate=learning_rate,
         per_device_train_batch_size=batch_size,
