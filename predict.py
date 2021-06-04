@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import typer
-from datasets import load_metric
+from datasets import balance_evaluation, load_metric
 from loguru import logger
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
@@ -24,6 +24,7 @@ def predict(
     model_type: str = "auto",
     batch_size: int = 16,
     max_length: int = 256,
+    balanced: bool = False,
 ):
     logger.info(f"Start singleclass prediction.")
     logger.info(f"Load the model: {model_checkpoint}.")
@@ -88,6 +89,8 @@ def predict(
         all_labels += labels
         all_predictions += predictions
 
+    if balanced:
+        all_labels, all_predictions = balance_evaluation(all_labels, all_predictions)
     stats = metric.compute(predictions=all_predictions, references=all_labels)
     print(stats)
     return stats

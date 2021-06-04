@@ -34,7 +34,7 @@ def split(train_ratio, train_csv, train_train_csv, train_test_csv):
     test_data.to_csv(train_test_csv)
 
 
-def oversampling(train_train_csv, train_train_oversampling_csv, label):
+def oversampling(train_train_csv, train_train_oversampling_csv, label, precise=False):
     df = pd.read_csv(train_train_csv)
     columns = df.columns
     label_idx = columns.to_list().index(label)
@@ -53,7 +53,8 @@ def oversampling(train_train_csv, train_train_oversampling_csv, label):
     new_data_label_1 = []
     for _ in range(int(len(data_label_0) / len(data_label_1))):
         new_data_label_1 += data_label_1.copy()
-    # new_data_label_1 += data_label_1.copy()[:len(data_label_0)%len(data_label_1)]
+    if precise:
+        new_data_label_1 += data_label_1.copy()[: len(data_label_0) % len(data_label_1)]
     new_data = data_label_0 + new_data_label_1
     new_df = pd.DataFrame(columns=columns, data=new_data).sample(frac=1)
     new_df.to_csv(train_train_oversampling_csv)
@@ -145,7 +146,10 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
 
 @app.command()
 def stats(csv: str, model_checkpoint: str):
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+    except:
+        tokenizer = T5Tokenizer.from_pretrained(model_checkpoint)
     if isinstance(csv, str):
         csv = [csv]
     csv = list(csv)
@@ -173,8 +177,30 @@ def stats(csv: str, model_checkpoint: str):
     )
 
 
+def balance_evaluation(labels, predictions):
+    idx_0 = []
+    idx_1 = []
+    for i, label in enumerate(labels):
+        if label == 0:
+            idx_0.append(i)
+        elif label == 1:
+            idx_1.append(i)
+        else:
+            raise ValueError
+    new_idx_1 = []
+    for _ in range(int(len(idx_0) / len(idx_1))):
+        new_idx_1 += idx_1.copy()
+    new_idx_1 += idx_1.copy()[: len(idx_0) % len(idx_1)]
+    new_labels = []
+    new_predictions = []
+    for i in idx_0 + new_idx_1:
+        new_labels.append(labels[i])
+        new_predictions.append(predictions[i])
+    return new_labels, new_predictions
+
+
 @app.command()
-def random_baseline(csv: str):
+def random_baseline(csv: str, balanced: bool = False):
     if isinstance(csv, str):
         csv = [csv]
     csv = list(csv)
@@ -189,15 +215,59 @@ def random_baseline(csv: str):
         engaging_labels.append(entry["Sub2_Engaging"])
         factclaiming_labels.append(entry["Sub3_FactClaiming"])
         random_predictions.append(random.randint(0, 1))
-        # random_predictions.append(0)
+    if balanced:
+        toxic_labels, random_toxic_predictions = balance_evaluation(toxic_labels, random_predictions)
+        engaging_labels, random_engaging_predictions = balance_evaluation(engaging_labels, random_predictions)
+        factclaiming_labels, random_factclaiming_predictions = balance_evaluation(
+            factclaiming_labels, random_predictions
+        )
+    else:
+        random_toxic_predictions = random_predictions
+        random_engaging_predictions = random_predictions
+        random_factclaiming_predictions = random_predictions
     metric = load_metric("metrics/singleclass.py")
     print(
         "Toxic: ",
-        metric.compute(predictions=random_predictions, references=toxic_labels),
+        metric.compute(predictions=random_toxic_predictions, references=toxic_labels),
         "\nEngaging: ",
-        metric.compute(predictions=random_predictions, references=engaging_labels),
+        metric.compute(predictions=random_engaging_predictions, references=engaging_labels),
         "\nFactclaiming: ",
-        metric.compute(predictions=random_predictions, references=factclaiming_labels),
+        metric.compute(predictions=random_factclaiming_predictions, references=factclaiming_labels),
+    )
+
+
+@app.command()
+def true_baseline(csv: str, balanced: bool = False):
+    if isinstance(csv, str):
+        csv = [csv]
+    csv = list(csv)
+    data = load_dataset("csv", data_files=csv)
+    dataset = data["train"]
+    toxic_labels = []
+    engaging_labels = []
+    factclaiming_labels = []
+    predictions = []
+    for entry in dataset:
+        toxic_labels.append(entry["Sub1_Toxic"])
+        engaging_labels.append(entry["Sub2_Engaging"])
+        factclaiming_labels.append(entry["Sub3_FactClaiming"])
+        predictions.append(1)
+    if balanced:
+        toxic_labels, toxic_predictions = balance_evaluation(toxic_labels, predictions)
+        engaging_labels, engaging_predictions = balance_evaluation(engaging_labels, predictions)
+        factclaiming_labels, factclaiming_predictions = balance_evaluation(factclaiming_labels, predictions)
+    else:
+        toxic_predictions = predictions
+        engaging_predictions = predictions
+        factclaiming_predictions = predictions
+    metric = load_metric("metrics/singleclass.py")
+    print(
+        "Toxic: ",
+        metric.compute(predictions=toxic_predictions, references=toxic_labels),
+        "\nEngaging: ",
+        metric.compute(predictions=engaging_predictions, references=engaging_labels),
+        "\nFactclaiming: ",
+        metric.compute(predictions=factclaiming_predictions, references=factclaiming_labels),
     )
 
 
