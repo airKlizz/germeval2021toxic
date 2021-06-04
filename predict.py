@@ -5,13 +5,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import typer
-from datasets import balance_evaluation, load_metric
+from datasets import load_metric
 from loguru import logger
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
                           MT5ForConditionalGeneration)
 
-from dataset import load
+from dataset import balance_evaluation, load
 
 app = typer.Typer()
 
