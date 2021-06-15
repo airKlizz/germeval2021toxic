@@ -2,3 +2,11 @@ data/
 __pycache__/
 **/*.lock
 states/
+bin/
+
+*.tsv
+*.json
+*.ipynb
+
+rules_based_test_dataset
+rules_based_train_dataset
