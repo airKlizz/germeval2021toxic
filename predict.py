@@ -12,6 +12,7 @@ from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
                           MT5ForConditionalGeneration)
 from pathlib import Path
+import re
 
 from dataset import balance_evaluation, load
 import json
@@ -22,7 +23,24 @@ app = typer.Typer()
 @app.command()
 def best_checkpoint(folder: str):
     states_files = list(Path(folder).glob("**/*state.json"))
+    buckets = {}
     for f in states_files:
+        parent = f.parent.parent
+        if parent in buckets.keys():
+            buckets[parent].append(f)
+        else:
+            buckets[parent] = [f]
+    final_fs = []
+    for bucket_files in buckets.values():
+        final_f = None
+        best_checkpoint = 0
+        pattern = r"checkpoint-[0-9]+/trainer_state.json"
+        for f in bucket_files:
+            checkpoint = int(re.findall(pattern, str(f))[0][11:-19])
+            if checkpoint > best_checkpoint:
+                final_f = f
+        final_fs.append(final_f)
+    for f in final_fs:
         logger.info(f"\n{f}\n{find_best_checkpoint_from_states(f)}\n")
     
 def find_best_checkpoint_from_states(states_file):
