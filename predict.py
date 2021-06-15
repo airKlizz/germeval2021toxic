@@ -23,7 +23,7 @@ app = typer.Typer()
 def best_checkpoint(folder: str):
     states_files = list(Path(folder).glob("**/*state.json"))
     for f in states_files:
-        logger.info(f"{f} - {find_best_checkpoint_from_states(f)}")
+        logger.info(f"\n{f}\n{find_best_checkpoint_from_states(f)}\n")
     
 def find_best_checkpoint_from_states(states_file):
     with open(states_file) as f:
