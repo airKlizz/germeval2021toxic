@@ -11,11 +11,25 @@ from loguru import logger
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
                           MT5ForConditionalGeneration)
+from pathlib import Path
 
 from dataset import balance_evaluation, load
+import json
 
 app = typer.Typer()
 
+
+@app.command()
+def best_checkpoint(folder: str):
+    states_files = list(Path(folder).glob("**/*state.json"))
+    for f in states_files:
+        logger.info(f"{f} - {find_best_checkpoint_from_states(f)}")
+    
+def find_best_checkpoint_from_states(states_file):
+    with open(states_file) as f:
+        data = json.load(f)
+    return data["best_model_checkpoint"]
+    
 
 @app.command()
 def predict(
