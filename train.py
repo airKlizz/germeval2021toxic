@@ -123,7 +123,8 @@ class MT5TrainerWithClassWeightsToxic(Trainer):
 def singleclass(
     train_csv: List[str] = ["data/train.train.csv"],
     test_csv: str = "data/train.test.csv",
-    labels: List[str] = ["Sub1_Toxic"],
+    train_labels: List[str] = ["Sub1_Toxic"],
+    test_labels: List[str] = ["Sub1_Toxic"],
     class_weights: bool = False,
     model_checkpoint: str = "deepset/gbert-base",
     model_type: str = "auto",
@@ -143,7 +144,7 @@ def singleclass(
         + "_class_weights="
         + str(class_weights)
         + "_labels="
-        + "_".join(labels)
+        + "_".join(train_labels)
         + "_languages="
         + "+".join(train_csv).replace("data/", "").replace("/", "_")
         + "_bs="
@@ -216,9 +217,9 @@ def singleclass(
     logger.debug(f"train_csv: {train_csv}")
     logger.debug(f"test_csv: {test_csv}")
     train_dataset = load(
-        train_csv, model_checkpoint, model_type, preprocess=True, labels=labels, max_length=max_length
+        train_csv, model_checkpoint, model_type, preprocess=True, labels=train_labels, max_length=max_length
     )
-    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=labels, max_length=max_length)
+    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=test_labels, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
@@ -229,7 +230,7 @@ def singleclass(
 
     if model_type == "auto":
         if class_weights == True:
-            if len(labels) == 1 and labels[0] == "Sub1_Toxic":
+            if len(train_labels) == 1 and train_labels[0] == "Sub1_Toxic":
                 logger.info("Using TrainerWithClassWeightsToxic")
                 trainer = TrainerWithClassWeightsToxic(
                     model,
@@ -253,7 +254,7 @@ def singleclass(
             )
     elif model_type == "t5":
         if class_weights == True:
-            if len(labels) == 1 and labels[0] == "Sub1_Toxic":
+            if len(train_labels) == 1 and train_labels[0] == "Sub1_Toxic":
                 logger.info("Using MT5TrainerWithClassWeightsToxic")
                 trainer = MT5TrainerWithClassWeightsToxic(
                     model,
