@@ -7,6 +7,7 @@ import typer
 from datasets import load_dataset, load_metric
 from tqdm import tqdm
 from transformers import AutoTokenizer, T5Tokenizer
+from typing import List
 
 app = typer.Typer()
 
@@ -145,7 +146,7 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
 
 
 @app.command()
-def stats(csv: str, model_checkpoint: str):
+def stats(csv: str, model_checkpoint: str, label_column: str = "hf"):
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
     except:
@@ -155,25 +156,20 @@ def stats(csv: str, model_checkpoint: str):
     csv = list(csv)
     data = load_dataset("csv", data_files=csv)
     dataset = data["train"]
+    print(dataset)
     lengths = []
-    toxic_labels = []
-    engaging_labels = []
-    factclaiming_labels = []
-    for entry in dataset:
+    labels = []
+    for i, entry in enumerate(dataset):
+        if not isinstance(entry["comment_text"], str):
+            print(i, entry["comment_text"])
+            continue
         lengths.append(len(tokenizer(entry["comment_text"])["input_ids"]))
-        toxic_labels.append(entry["Sub1_Toxic"])
-        engaging_labels.append(entry["Sub2_Engaging"])
-        factclaiming_labels.append(entry["Sub3_FactClaiming"])
-
+        labels.append(entry[label_column])
     print(
         "Lengths: ",
         describe(lengths),
-        "\nToxic: ",
-        np.array(toxic_labels).mean(),
-        "\nEngaging: ",
-        np.array(engaging_labels).mean(),
-        "\nFactclaiming: ",
-        np.array(factclaiming_labels).mean(),
+        "\nLabel: ",
+        np.array(labels).mean(),
     )
 
 
@@ -235,7 +231,6 @@ def random_baseline(csv: str, balanced: bool = False):
         metric.compute(predictions=random_factclaiming_predictions, references=factclaiming_labels),
     )
 
-
 @app.command()
 def true_baseline(csv: str, balanced: bool = False):
     if isinstance(csv, str):
@@ -269,6 +264,60 @@ def true_baseline(csv: str, balanced: bool = False):
         "\nFactclaiming: ",
         metric.compute(predictions=factclaiming_predictions, references=factclaiming_labels),
     )
+
+@app.command()
+def false_baseline(csv: str, balanced: bool = False):
+    if isinstance(csv, str):
+        csv = [csv]
+    csv = list(csv)
+    data = load_dataset("csv", data_files=csv)
+    dataset = data["train"]
+    toxic_labels = []
+    engaging_labels = []
+    factclaiming_labels = []
+    predictions = []
+    for entry in dataset:
+        toxic_labels.append(entry["Sub1_Toxic"])
+        engaging_labels.append(entry["Sub2_Engaging"])
+        factclaiming_labels.append(entry["Sub3_FactClaiming"])
+        predictions.append(0)
+    if balanced:
+        toxic_labels, toxic_predictions = balance_evaluation(toxic_labels, predictions)
+        engaging_labels, engaging_predictions = balance_evaluation(engaging_labels, predictions)
+        factclaiming_labels, factclaiming_predictions = balance_evaluation(factclaiming_labels, predictions)
+    else:
+        toxic_predictions = predictions
+        engaging_predictions = predictions
+        factclaiming_predictions = predictions
+    metric = load_metric("metrics/singleclass.py")
+    print(
+        "Toxic: ",
+        metric.compute(predictions=toxic_predictions, references=toxic_labels),
+        "\nEngaging: ",
+        metric.compute(predictions=engaging_predictions, references=engaging_labels),
+        "\nFactclaiming: ",
+        metric.compute(predictions=factclaiming_predictions, references=factclaiming_labels),
+    )
+
+@app.command()
+def combine_train_csvs(
+    csvs: List[str] = [
+        "data/conan/train.csv",
+        "data/fox-news/train.csv",
+        "data/germeval18/train.csv",
+        "data/HASOC/train.csv",
+        "data/hate_speech_mlma/train.csv",
+        "data/hate-speech-dataset/train.csv",
+        "data/hateoffensive/train.csv",
+        "data/idhsd_rio/train.csv",
+        "data/IWG_hatespeech/train.csv",
+        "data/L-HSAB/train.csv",
+        "data/LaCAfe/train.csv",
+        "data/okkyibrohim/train.csv",
+    ],
+):
+    df = pd.concat([pd.read_csv(csv) for csv in csvs]).drop(columns=['Unnamed: 0'])
+    df.to_csv("data/combination/train.csv")
 
 
 if __name__ == "__main__":

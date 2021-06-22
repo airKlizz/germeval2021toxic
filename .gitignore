@@ -3,6 +3,7 @@ __pycache__/
 **/*.lock
 states/
 bin/
+.vscode/
 
 *.tsv
 *.json
@@ -10,3 +11,5 @@ bin/
 
 rules_based_test_dataset
 rules_based_train_dataset
+
+.DS_Store
