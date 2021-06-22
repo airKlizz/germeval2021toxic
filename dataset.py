@@ -116,7 +116,7 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
 
         # label
         def get_label(label):
-            if label == "Sub1_Toxic" or label == "toxic":
+            if label == "Sub1_Toxic" or label == "toxic" or label == "hf":
                 return [59006, 112560]
             if label == "Sub2_Engaging":
                 return [59006, 46151]
