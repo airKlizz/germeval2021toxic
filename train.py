@@ -309,7 +309,7 @@ def hyperparameter_search_singleclass(
         + "_class_weights="
         + str(class_weights)
         + "_label="
-        + str(train_label)
+        + str(train_labels)
         + "_languages="
         + "+".join(train_csv).replace("data/", "").replace("/", "_")
     )
