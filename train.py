@@ -291,12 +291,17 @@ def singleclass(
 def hyperparameter_search_singleclass(
     train_csv: List[str] = ["data/train.train.csv"],
     test_csv: str = "data/train.test.csv",
-    label: int = 0,
+    train_labels: List[str] = ["Sub1_Toxic"],
+    test_labels: List[str] = ["Sub1_Toxic"],
     class_weights: bool = True,
     model_checkpoint: str = "deepset/gbert-base",
     model_type: str = "auto",
     output_dir: str = "models/hyperparameter_search_singleclass/",
-    max_length: int = None,
+    eval_accumulation_steps: int = 100,
+    max_length: int = 256,
+    eval_steps: int = 250,
+    save_steps: int = 500,
+    n_trials: int = 10,
 ):
     logger.info(f"Start singleclass training.")
     output_dir += (
@@ -304,10 +309,12 @@ def hyperparameter_search_singleclass(
         + "_class_weights="
         + str(class_weights)
         + "_label="
-        + str(label)
+        + str(train_label)
         + "_languages="
         + "+".join(train_csv).replace("data/", "").replace("/", "_")
     )
+    output_dir = output_dir[:256]
+    logger.info(f"Load the model: {model_checkpoint}.")
 
     if model_type == "auto":
 
@@ -324,7 +331,11 @@ def hyperparameter_search_singleclass(
 
     args = TrainingArguments(
         output_dir=output_dir,
-        evaluation_strategy="epoch",
+        save_strategy="steps",
+        save_steps=save_steps,
+        evaluation_strategy="steps",
+        eval_steps=eval_steps,
+        eval_accumulation_steps=eval_accumulation_steps,
         load_best_model_at_end=True,
         metric_for_best_model="f1",
         logging_dir="./logs",
@@ -344,16 +355,16 @@ def hyperparameter_search_singleclass(
 
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
-            print("LOGITS")
-            print(type(logits))
-            print(len(logits))
-            print(type(logits[0]))
-            print(logits[0].shape)
-            print(torch.argmax(logits[0], dim=2))
-            labels = np.where(labels == 375, 0, labels)
-            labels = np.where(labels == 36339, 1, labels)
+            # print("LOGITS")
+            # print(type(logits))
+            # print(len(logits))
+            # print(type(logits[0]))
+            # print(logits[0].shape)
+            # print(np.argmax(logits[0], axis=2))
+            labels = np.where(labels == 59006, 0, labels)
+            labels = np.where(labels == 112560, 1, labels)
             logits = torch.tensor(logits[0]).squeeze(1)
-            selected_logits = logits[:, [375, 36339]]  # no=375 yes=36339
+            selected_logits = logits[:, [59006, 112560]]
             probs = F.softmax(selected_logits, dim=1)
             predictions = np.argmax(probs.tolist(), axis=1)
             return metric.compute(predictions=predictions, references=labels)
@@ -365,11 +376,9 @@ def hyperparameter_search_singleclass(
     logger.debug(f"train_csv: {train_csv}")
     logger.debug(f"test_csv: {test_csv}")
     train_dataset = load(
-        train_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
+        train_csv, model_checkpoint, model_type, preprocess=True, labels=train_labels, max_length=max_length
     )
-    test_dataset = load(
-        test_csv, model_checkpoint, model_type, preprocess=True, num_labels=1, label=label, max_length=max_length
-    )
+    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=test_labels, max_length=max_length)
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
@@ -380,7 +389,7 @@ def hyperparameter_search_singleclass(
 
     if model_type == "auto":
         if class_weights == True:
-            if label == 0:
+            if len(train_labels) == 1 and train_labels[0] == "Sub1_Toxic":
                 logger.info("Using TrainerWithClassWeightsToxic")
                 trainer = TrainerWithClassWeightsToxic(
                     model_init=model_init,
@@ -404,7 +413,7 @@ def hyperparameter_search_singleclass(
             )
     elif model_type == "t5":
         if class_weights == True:
-            if label == 0:
+            if len(train_labels) == 1 and train_labels[0] == "Sub1_Toxic":
                 logger.info("Using MT5TrainerWithClassWeightsToxic")
                 trainer = MT5TrainerWithClassWeightsToxic(
                     model_init=model_init,
@@ -430,7 +439,7 @@ def hyperparameter_search_singleclass(
         raise NotImplementedError("Model type available: 'auto' or 't5'")
 
     logger.info("Start the hyperparameter search.")
-    best_run = trainer.hyperparameter_search(n_trials=10, direction="maximize")
+    best_run = trainer.hyperparameter_search(n_trials=n_trials, direction="maximize")
 
     logger.info(f"Best run: {best_run}")
 

@@ -161,7 +161,7 @@ def stats(csv: str, model_checkpoint: str, label_column: str = "hf"):
     labels = []
     for i, entry in enumerate(dataset):
         if not isinstance(entry["comment_text"], str):
-            print(i, entry["comment_text"])
+            print(i, entry["Unnamed: 0"], entry["comment_text"], entry["hf"])
             continue
         lengths.append(len(tokenizer(entry["comment_text"])["input_ids"]))
         labels.append(entry[label_column])
