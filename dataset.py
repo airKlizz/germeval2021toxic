@@ -136,7 +136,7 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
                 values = [idx_to_label[idx][v] for idx, v in enumerate(values)]
                 labels.append(values if len(values) > 1 else values[0])
             else:
-                values = [1.0 if v == 1 else -1.0 for v in values]
+                values = [1 if v == 1 else 0 for v in values]
                 labels.append(values if len(values) > 1 else values[0])
         if len(labels) != 0:
             output["labels"] = labels

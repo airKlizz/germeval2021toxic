@@ -293,7 +293,7 @@ def hyperparameter_search_singleclass(
     test_csv: str = "data/train.test.csv",
     train_labels: List[str] = ["Sub1_Toxic"],
     test_labels: List[str] = ["Sub1_Toxic"],
-    class_weights: bool = True,
+    class_weights: bool = False,
     model_checkpoint: str = "deepset/gbert-base",
     model_type: str = "auto",
     output_dir: str = "models/hyperparameter_search_singleclass/",
@@ -355,12 +355,6 @@ def hyperparameter_search_singleclass(
 
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
-            # print("LOGITS")
-            # print(type(logits))
-            # print(len(logits))
-            # print(type(logits[0]))
-            # print(logits[0].shape)
-            # print(np.argmax(logits[0], axis=2))
             labels = np.where(labels == 59006, 0, labels)
             labels = np.where(labels == 112560, 1, labels)
             logits = torch.tensor(logits[0]).squeeze(1)
