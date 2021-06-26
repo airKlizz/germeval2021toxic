@@ -82,6 +82,16 @@ def undersampling(train_train_csv, train_train_undersampling_csv, label):
     new_df = pd.DataFrame(columns=columns, data=new_data).sample(frac=1)
     new_df.to_csv(train_train_undersampling_csv)
 
+@app.command()
+def combine_two_datasets(output_csv, csv1, csv2, comment_text1, comment_text2, label1, label2):
+    df1 = pd.read_csv(csv1)
+    df2 = pd.read_csv(csv2)
+
+    texts = df1[comment_text1].values.tolist() + df2[comment_text2].values.tolist()
+    labels = df1[label1].values.tolist() + df2[label2].values.tolist()
+    data = list(zip(texts, labels))
+    df = pd.DataFrame(data=data, columns=[comment_text1, label1])
+    df.to_csv(output_csv)
 
 def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, labels=None, max_length=None):
     if isinstance(csv, str):
