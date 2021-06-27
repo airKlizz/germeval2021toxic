@@ -285,6 +285,7 @@ def singleclass(
     logger.info("Start the evaluation.")
     metrics = trainer.evaluate()
     logger.info(metrics)
+    trainer.save_model()
 
 
 @app.command()
@@ -446,6 +447,7 @@ def hyperparameter_search_singleclass(
     logger.info("Start the evaluation.")
     metrics = trainer.evaluate()
     logger.info(metrics)
+    tainer.save_model()
 
 
 if __name__ == "__main__":
