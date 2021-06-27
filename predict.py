@@ -46,7 +46,7 @@ def best_checkpoint(folder: str):
 def find_best_checkpoint_from_states(states_file):
     with open(states_file) as f:
         data = json.load(f)
-    logger.debug(data.keys())
+    logger.debug(data["best_metric"])
     return data["best_model_checkpoint"]
     
 
