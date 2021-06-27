@@ -138,6 +138,7 @@ def create_submission(
     batch_size: int = 16,
     max_length: int = 256,
     output_file: str = "submission.csv",
+    binary: bool = True,
 ):
     logger.info(f"Start singleclass prediction.")
     logger.info(f"Load the model: {model_checkpoint}.")
@@ -152,7 +153,9 @@ def create_submission(
     if model_type == "auto":
 
         def get_predictions(outputs):
-            return np.argmax(outputs.logits.tolist(), axis=1).tolist()
+            if binary:
+                return np.argmax(outputs.logits.tolist(), axis=1).tolist()
+            return outputs.logits.tolist()
 
     elif model_type == "t5":
 
@@ -160,7 +163,9 @@ def create_submission(
             logits = outputs.logits.squeeze(1)
             selected_logits = logits[:, [59006, 112560]]
             probs = F.softmax(selected_logits, dim=1)
-            return np.argmax(probs.tolist(), axis=1).tolist()
+            if binary:
+                return np.argmax(probs.tolist(), axis=1).tolist()
+            return probs.tolist()
 
     else:
         raise NotImplementedError("Model type available: 'auto' or 't5'")
@@ -185,7 +190,12 @@ def create_submission(
         all_predictions += predictions
 
     ids = dataset["id"]
-    df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
+    if binary:
+        df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
+    else:
+        predictions0  = list(list(zip(*all_predictions))[0])
+        predictions1  = list(list(zip(*all_predictions))[1])
+        df = pd.DataFrame(columns=["id", "prediction0", "prediction1"], data=zip(*[ids, predictions0, predictions1]))
     df.to_csv(output_file)
 
 
