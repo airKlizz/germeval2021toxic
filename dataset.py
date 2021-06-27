@@ -156,7 +156,7 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
 
 
 @app.command()
-def stats(csv: str, model_checkpoint: str, label_column: str = "hf"):
+def stats(csv: List[str], model_checkpoint: str, label_column: str = "hf"):
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
     except:
