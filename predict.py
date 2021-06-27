@@ -189,7 +189,10 @@ def create_submission(
         predictions = get_predictions(outputs)
         all_predictions += predictions
 
-    ids = dataset["id"]
+    try: 
+        ids = dataset["id"]
+    else:
+        ids = list(range(len(all_predictions)))
     if binary:
         df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
     else:
