@@ -437,8 +437,11 @@ def hyperparameter_search_singleclass(
     else:
         raise NotImplementedError("Model type available: 'auto' or 't5'")
 
+    def my_objective(metrics):
+        return metrics["f1"]
+
     logger.info("Start the hyperparameter search.")
-    best_run = trainer.hyperparameter_search(n_trials=n_trials, direction="maximize")
+    best_run = trainer.hyperparameter_search(n_trials=n_trials, direction="maximize", compute_objective=my_objective)
 
     logger.info(f"Best run: {best_run}")
 
