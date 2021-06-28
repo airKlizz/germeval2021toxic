@@ -301,6 +301,7 @@ def hyperparameter_search_singleclass(
     model_checkpoint: str = "deepset/gbert-base",
     model_type: str = "auto",
     output_dir: str = "models/hyperparameter_search_singleclass/",
+    strategy: str = "epoch",
     eval_accumulation_steps: int = 100,
     max_length: int = 256,
     eval_steps: int = 250,
@@ -335,9 +336,9 @@ def hyperparameter_search_singleclass(
 
     args = TrainingArguments(
         output_dir=output_dir,
-        save_strategy="steps",
+        save_strategy=strategy,
         save_steps=save_steps,
-        evaluation_strategy="steps",
+        evaluation_strategy=strategy,
         eval_steps=eval_steps,
         eval_accumulation_steps=eval_accumulation_steps,
         load_best_model_at_end=True,
