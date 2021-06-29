@@ -185,6 +185,12 @@ def create_submission(
         columns = ["input_ids", "attention_mask", "decoder_input_ids"]
     else:
         raise NotImplementedError("Model type available: 'auto' or 't5'")
+    final_columns = []
+    for column in columns:
+        if column in dataset.column_names:
+            final_columns.append(column)
+    columns = final_columns
+
     dataset.set_format(type="torch", columns=columns)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
 
