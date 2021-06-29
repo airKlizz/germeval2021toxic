@@ -198,7 +198,10 @@ def create_submission(
     try: 
         ids = dataset["id"]
     except:
-        ids = dataset["comment_text"]
+        try:
+            ids = dataset["comment_id"]
+        except:
+            ids = dataset["comment_text"]
     if binary:
         df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
     else:
