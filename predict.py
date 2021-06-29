@@ -138,7 +138,7 @@ def predict(
 
 @app.command()
 def create_submission(
-    test_csv: str = "data/toxic_kaggle/test.csv",
+    test_csv: str = "data/test.csv",
     model_checkpoint: str = "deepset/gbert-base",
     model_type: str = "auto",
     batch_size: int = 16,
