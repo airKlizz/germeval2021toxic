@@ -149,7 +149,7 @@ def joint_predict(
 ):
     logger.info(f"Start singleclass joint prediction.")
     metric = load_metric("metrics/singleclass.py")
-
+    dataset_labels = labels
     all_models_predictions = []
     for model_checkpoint, model_type in zip(model_checkpoints, model_types):
         logger.info(f"Load the model: {model_checkpoint}.")
@@ -195,7 +195,7 @@ def joint_predict(
 
         logger.info("Load and preprocess the dataset.")
         logger.debug(f"test_csv: {test_csv}")
-        dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=labels, max_length=max_length)
+        dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=dataset_labels, max_length=max_length)
         if model_type == "auto":
             columns = ["input_ids", "token_type_ids", "attention_mask", "labels"]
         elif model_type == "t5":
