@@ -138,6 +138,7 @@ def predict(
 @app.command()
 def joint_predict(
     test_csv: str = "data/train.test.csv",
+    labels: List[str] = ["Sub1_Toxic"],
     model_checkpoints: List[str] = ["deepset/gbert-base"],
     model_types: List[str] = ["auto"],
     batch_size: int = 16,
@@ -194,7 +195,7 @@ def joint_predict(
 
         logger.info("Load and preprocess the dataset.")
         logger.debug(f"test_csv: {test_csv}")
-        dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=[], max_length=max_length)
+        dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=labels, max_length=max_length)
         if model_type == "auto":
             columns = ["input_ids", "token_type_ids", "attention_mask", "labels"]
         elif model_type == "t5":
