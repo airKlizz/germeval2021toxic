@@ -167,6 +167,12 @@ def joint_predict(
                     return np.argmax(outputs.logits.tolist(), axis=1).tolist()
                 return outputs.logits.tolist()[1]
 
+            def get_labels(labels):
+                labels = labels.cpu()
+                labels = np.where(labels == -1.0, 0, labels)
+                labels = np.where(labels == 1.0, 1, labels)
+                return labels.tolist()
+
         elif model_type == "t5":
 
             def get_predictions(outputs):
@@ -177,6 +183,12 @@ def joint_predict(
                     return np.argmax(probs.tolist(), axis=1).tolist()
                 return probs.tolist()[1]
 
+            def get_labels(labels):
+                labels = labels.cpu()
+                labels = np.where(labels == 59006, 0, labels)
+                labels = np.where(labels == 112560, 1, labels)
+                return labels.tolist()
+
         else:
             raise NotImplementedError("Model type available: 'auto' or 't5'")
 
@@ -184,9 +196,9 @@ def joint_predict(
         logger.debug(f"test_csv: {test_csv}")
         dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=[], max_length=max_length)
         if model_type == "auto":
-            columns = ["input_ids", "token_type_ids", "attention_mask"]
+            columns = ["input_ids", "token_type_ids", "attention_mask", "labels"]
         elif model_type == "t5":
-            columns = ["input_ids", "attention_mask", "decoder_input_ids"]
+            columns = ["input_ids", "attention_mask", "decoder_input_ids", "labels"]
         else:
             raise NotImplementedError("Model type available: 'auto' or 't5'")
         final_columns = []
@@ -198,11 +210,14 @@ def joint_predict(
         dataset.set_format(type="torch", columns=columns)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
 
+        all_labels = []
         all_predictions = []
         for batch in tqdm(dataloader, desc="In progress..."):
             batch = {k: v.to(device) for k, v in batch.items()}
+            labels = get_labels(batch.pop("labels"))
             outputs = model(**batch)
             predictions = get_predictions(outputs)
+            all_labels += labels
             all_predictions += predictions
 
         all_models_predictions.append(all_predictions)
@@ -211,6 +226,9 @@ def joint_predict(
     for models_prediction in zip(*all_models_predictions):
         assert len(models_prediction) == len(model_checkpoints)
         final_predictions.append(round(sum(models_prediction) / len(models_prediction)))
+
+    stats = metric.compute(predictions=final_predictions, references=all_labels)
+    print(stats)
 
     try: 
         ids = dataset["id"]
