@@ -219,7 +219,8 @@ def joint_predict(
             ids = dataset["comment_id"]
         except:
             ids = dataset["comment_text"]
-    df = pd.DataFrame(columns=["id"] + model_checkpoints, data=zip(*([ids] + all_models_predictions)))
+    df = pd.DataFrame(columns=["id"] + list(model_checkpoints), data=zip(*([ids] + list(all_models_predictions))))
+    print(df.head())
     if to_file:
         df.to_csv(output_file)
 
