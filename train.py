@@ -143,6 +143,7 @@ def singleclass(
     model_checkpoint: str = "deepset/gbert-base",
     model_type: str = "auto",
     output_dir: str = "models/singleclass/",
+    strategy: str = "epoch",
     batch_size: int = 16,
     gradient_accumulation_steps: int = 1,
     eval_accumulation_steps: int = 100,
@@ -180,9 +181,9 @@ def singleclass(
 
     args = TrainingArguments(
         output_dir=output_dir,
-        save_strategy="steps",
+        save_strategy=strategy,
         save_steps=save_steps,
-        evaluation_strategy="steps",
+        evaluation_strategy=strategy,
         eval_steps=eval_steps,
         eval_accumulation_steps=eval_accumulation_steps,
         learning_rate=learning_rate,
