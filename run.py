@@ -15,7 +15,7 @@ def t5(comment: str, model_checkpoint: str, cuda: bool = True):
     model.eval()
 
     inputs = tok("speech review: " + comment, return_tensors="pt")
-    print(inputs)
+    inputs["decoder_input_ids"] = torch.tensor([[tok.pad_token_id] for _ in range(len(inputs["input_ids"]))])
     outputs = model(**inputs)
     selected_logits = outputs.logits.squeeze(1)[:, [59006, 112560]]
     score = nn.functional.softmax(selected_logits, dim=-1)
