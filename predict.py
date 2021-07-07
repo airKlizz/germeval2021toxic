@@ -1,6 +1,6 @@
 import random
 from typing import List
-
+import random
 import numpy as np
 import pandas as pd
 import torch
@@ -325,7 +325,22 @@ def create_submission(
         df = pd.DataFrame(columns=["id", "prediction0", "prediction1"], data=zip(*[ids, predictions0, predictions1]))
     df.to_csv(output_file)
 
-
+@app.command()
+def create_random_submission(
+    test_csv: str = "data/test.csv",
+    output_file: str = "submission.csv",
+):
+    dataset = load(test_csv, preprocess=False)
+    try: 
+        ids = dataset["id"]
+    except:
+        try:
+            ids = dataset["comment_id"]
+        except:
+            ids = dataset["comment_text"]
+    all_predictions = [random.randint(0, 1) for _ in range(len(ids))]
+    df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
+    df.to_csv(output_file)
 
 if __name__ == "__main__":
     app()
