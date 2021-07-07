@@ -14,7 +14,8 @@ def t5(comment: str, model_checkpoint: str, cuda: bool = True):
     model = MT5ForConditionalGeneration.from_pretrained(model_checkpoint).to(device)
     model.eval()
 
-    inputs = tok(comment, return_tensors="pt")
+    inputs = tok("speech review: " + comment, return_tensors="pt")
+    print(inputs)
     outputs = model(**inputs)
     selected_logits = outputs.logits.squeeze(1)[:, [59006, 112560]]
     score = nn.functional.softmax(selected_logits, dim=-1)
