@@ -7,8 +7,8 @@ from transformers import (AutoModelForSequenceClassification,
 app = typer.Typer()
 
 @app.command()
-def t5(comment, model_checkpoint):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+def t5(comment, model_checkpoint, cuda=True):
+    device = "cuda" if torch.cuda.is_available() and cuda else "cpu"
     tok = AutoTokenizer.from_pretrained(model_checkpoint)
     model = MT5ForConditionalGeneration.from_pretrained(model_checkpoint).to(device)
     model.eval()
@@ -21,8 +21,8 @@ def t5(comment, model_checkpoint):
     return score
 
 @app.command()
-def auto(comment, model_checkpoint):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+def auto(comment, model_checkpoint, cuda=True):
+    device = "cuda" if torch.cuda.is_available() and cuda else "cpu"
     tok = AutoTokenizer.from_pretrained(model_checkpoint)
     model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint).to(device)
     model.eval()
