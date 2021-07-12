@@ -14,6 +14,7 @@ from loguru import logger
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
                           MT5ForConditionalGeneration)
+from sklearn.metrics import classification_report
 
 from dataset import balance_evaluation, load
 
@@ -346,6 +347,106 @@ def create_random_submission(
     df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
     df.to_csv(output_file)
 
+
+@app.command()
+def predict_official(
+    test_csv: str = "data/test.csv",
+    truth_csv: str = "data/truth.csv",
+    labels: List[str] = ["Sub1_Toxic"],
+    model_checkpoint: str = "deepset/gbert-base",
+    model_type: str = "auto",
+    batch_size: int = 16,
+    max_length: int = 256,
+    balanced: bool = False,
+):
+    logger.info(f"Start singleclass prediction.")
+    logger.info(f"Load the model: {model_checkpoint}.")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if model_type == "auto":
+        model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=2).to(device)
+    elif model_type == "t5":
+        model = MT5ForConditionalGeneration.from_pretrained(model_checkpoint).to(device)
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
+
+    if model_type == "auto":
+
+        def get_predictions(outputs):
+            return np.argmax(outputs.logits.tolist(), axis=1).tolist()
+
+        def get_labels(labels):
+            labels = labels.cpu()
+            labels = np.where(labels == -1.0, 0, labels)
+            labels = np.where(labels == 1.0, 1, labels)
+            return labels.tolist()
+
+    elif model_type == "t5":
+
+        def get_predictions(outputs):
+            logits = outputs.logits.squeeze(1)
+            selected_logits = logits[:, [59006, 112560]]
+            probs = F.softmax(selected_logits, dim=1)
+            return np.argmax(probs.tolist(), axis=1).tolist()
+
+        def get_labels(labels):
+            labels = labels.cpu()
+            labels = np.where(labels == 59006, 0, labels)
+            labels = np.where(labels == 112560, 1, labels)
+            return labels.tolist()
+
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
+
+    logger.info("Load and preprocess the dataset.")
+    logger.debug(f"test_csv: {test_csv}")
+    dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=[], max_length=max_length)
+    if model_type == "auto":
+        columns = ["input_ids", "token_type_ids", "attention_mask", "comment_id"]
+    elif model_type == "t5":
+        columns = ["input_ids", "attention_mask", "decoder_input_ids", "comment_id"]
+    else:
+        raise NotImplementedError("Model type available: 'auto' or 't5'")
+    final_columns = []
+    for column in columns:
+        if column in dataset.column_names:
+            final_columns.append(column)
+    columns = final_columns
+
+    dataset.set_format(type="torch", columns=columns)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
+
+    all_ids = []
+    all_predictions = []
+    for batch in tqdm(dataloader, desc="In progress..."):
+        batch = {k: v.to(device) for k, v in batch.items()}
+        ids = get_labels(batch.pop("comment_id"))
+        outputs = model(**batch)
+        predictions = get_predictions(outputs)
+        assert len(predictions) == len(ids)
+        all_ids += ids
+        all_predictions += predictions
+
+    labels_df = pd.read_csv(truth_csv)
+    labels_df = labels_df.set_index("comment_id")
+    all_labels = [labels_df.loc[i]["Sub1_Toxic"] for i in all_ids]
+
+    if balanced:
+        all_labels, all_predictions = balance_evaluation(all_labels, all_predictions)
+
+    report = classification_report(all_labels, all_predictions, output_dict=True)
+    precision_score_1 = report["macro avg"]["precision"]
+    recall_score_1 = report["macro avg"]["recall"]
+    f1_score_1 = 0
+    if precision_score_1 + recall_score_1 > 0:
+        f1_score_1 = 2 * precision_score_1 * recall_score_1 / (precision_score_1 + recall_score_1)
+    stats = {
+        "f1": f1_score_1,
+        "recall": recall_score_1,
+        "precision": precision_score_1,
+    }
+
+    print(stats)
+    return stats
 
 if __name__ == "__main__":
     app()
