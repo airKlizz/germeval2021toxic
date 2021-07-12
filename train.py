@@ -33,10 +33,10 @@ class TrainerWithClassWeightsToxic(Trainer):
         labels = inputs.pop("labels")
         outputs = model(**inputs)
         logits = outputs.logits
-        # Sub1_Toxic
-        # loss_fct = torch.nn.CrossEntropyLoss(
-        #     weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
-        # )
+        Sub1_Toxic
+        loss_fct = torch.nn.CrossEntropyLoss(
+            weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
+        )
         # Sub1_Toxic with labelled data
         # loss_fct = torch.nn.CrossEntropyLoss(
         #     weight=torch.Tensor([0.4087087734425523, 0.5912912265574477]).to(logits.device)
@@ -46,9 +46,9 @@ class TrainerWithClassWeightsToxic(Trainer):
         #     weight=torch.Tensor([0.2658959537572254, 0.7341040462427746]).to(logits.device)
         # )
         # Sub3_FactClaiming
-        loss_fct = torch.nn.CrossEntropyLoss(
-            weight=torch.Tensor([0.3421965317919075, 0.6578034682080924]).to(logits.device)
-        )
+        # loss_fct = torch.nn.CrossEntropyLoss(
+        #     weight=torch.Tensor([0.3421965317919075, 0.6578034682080924]).to(logits.device)
+        # )
 
         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
