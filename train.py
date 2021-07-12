@@ -33,7 +33,7 @@ class TrainerWithClassWeightsToxic(Trainer):
         labels = inputs.pop("labels")
         outputs = model(**inputs)
         logits = outputs.logits
-        Sub1_Toxic
+        # Sub1_Toxic
         loss_fct = torch.nn.CrossEntropyLoss(
             weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
         )
