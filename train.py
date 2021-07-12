@@ -49,7 +49,7 @@ class TrainerWithClassWeightsToxic(Trainer):
         loss_fct = torch.nn.CrossEntropyLoss(
             weight=torch.Tensor([0.3421965317919075, 0.6578034682080924]).to(logits.device)
         )
-        
+
         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
 
@@ -234,7 +234,9 @@ def singleclass(
     train_dataset = load(
         train_csv, model_checkpoint, model_type, preprocess=True, labels=train_labels, max_length=max_length
     )
-    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=test_labels, max_length=max_length)
+    test_dataset = load(
+        test_csv, model_checkpoint, model_type, preprocess=True, labels=test_labels, max_length=max_length
+    )
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
@@ -389,7 +391,9 @@ def hyperparameter_search_singleclass(
     train_dataset = load(
         train_csv, model_checkpoint, model_type, preprocess=True, labels=train_labels, max_length=max_length
     )
-    test_dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=test_labels, max_length=max_length)
+    test_dataset = load(
+        test_csv, model_checkpoint, model_type, preprocess=True, labels=test_labels, max_length=max_length
+    )
     logger.info(f"Dataset sample: {train_dataset[0]}")
     if model_type == "auto":
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)

@@ -1,4 +1,5 @@
 import random
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -7,7 +8,6 @@ import typer
 from datasets import load_dataset, load_metric
 from tqdm import tqdm
 from transformers import AutoTokenizer, T5Tokenizer
-from typing import List
 
 app = typer.Typer()
 
@@ -82,6 +82,7 @@ def undersampling(train_train_csv, train_train_undersampling_csv, label):
     new_df = pd.DataFrame(columns=columns, data=new_data).sample(frac=1)
     new_df.to_csv(train_train_undersampling_csv)
 
+
 @app.command()
 def combine_two_datasets(output_csv, csv1, csv2, comment_text1, comment_text2, label1, label2):
     df1 = pd.read_csv(csv1)
@@ -93,7 +94,8 @@ def combine_two_datasets(output_csv, csv1, csv2, comment_text1, comment_text2, l
     df = pd.DataFrame(data=data, columns=[comment_text1, label1])
     df.to_csv(output_csv)
 
-def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, labels=None, max_length=None):
+
+def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, labels=None, max_length=None, shuffle=True):
     if isinstance(csv, str):
         csv = [csv]
     csv = list(csv)
@@ -101,7 +103,9 @@ def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, labels
     dataset = data["train"]
     if preprocess:
         return preprocess_dataset(dataset, model_checkpoint, model_type, labels, max_length).shuffle(seed=42)
-    return dataset.shuffle(seed=42)
+    if shuffle:
+        return dataset.shuffle(seed=42)
+    return dataset
 
 
 def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_length=None):
@@ -241,6 +245,7 @@ def random_baseline(csv: str, balanced: bool = False):
         metric.compute(predictions=random_factclaiming_predictions, references=factclaiming_labels),
     )
 
+
 @app.command()
 def true_baseline(csv: str, balanced: bool = False):
     if isinstance(csv, str):
@@ -274,6 +279,7 @@ def true_baseline(csv: str, balanced: bool = False):
         "\nFactclaiming: ",
         metric.compute(predictions=factclaiming_predictions, references=factclaiming_labels),
     )
+
 
 @app.command()
 def false_baseline(csv: str, balanced: bool = False):
@@ -309,6 +315,7 @@ def false_baseline(csv: str, balanced: bool = False):
         metric.compute(predictions=factclaiming_predictions, references=factclaiming_labels),
     )
 
+
 @app.command()
 def combine_train_csvs(
     csvs: List[str] = [
@@ -326,7 +333,7 @@ def combine_train_csvs(
         "data/okkyibrohim/train.csv",
     ],
 ):
-    df = pd.concat([pd.read_csv(csv) for csv in csvs]).drop(columns=['Unnamed: 0'])
+    df = pd.concat([pd.read_csv(csv) for csv in csvs]).drop(columns=["Unnamed: 0"])
     df.to_csv("data/combination/train.csv")
 
 

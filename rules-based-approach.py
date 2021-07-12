@@ -7,10 +7,9 @@ from datasets import load_from_disk, load_metric
 from elg import Service
 from loguru import logger
 from sklearn.ensemble import RandomForestClassifier
-from spellchecker import SpellChecker
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-
+from spellchecker import SpellChecker
 
 from dataset import load
 from german_stop_words import GERMAN_STOP_WORDS
@@ -257,7 +256,7 @@ def test_all(
     y = train_dataset["Sub1_Toxic"]
     class_weights = len(y) / (2 * np.bincount(y))
     sample_weight = [class_weights[label] for label in y]
-    #clf = RandomForestClassifier(max_depth=10, random_state=42)
+    # clf = RandomForestClassifier(max_depth=10, random_state=42)
     clf = LogisticRegression(C=24.0)
     clf.fit(X, y)
     X = test_dataset["all"]
@@ -266,6 +265,7 @@ def test_all(
     results[f"all"] = metric.compute(predictions=predictions, references=references)
     results[f"all"]["number_of_occurence"] = f"{sum(predictions)}/{len(predictions)}"
     logger.info(pprint(results, indent=2))
+
 
 @app.command()
 def test_tfidf_logistic_regression(
@@ -286,9 +286,9 @@ def test_tfidf_logistic_regression(
         test_dataset = test_dataset.map(Patterns.all)
         test_dataset.save_to_disk(test_disk)
     metric = load_metric("metrics/singleclass.py")
-    results = {}   
-    X = np.array(train_dataset["comment_text"]).astype('U')
-    vect = TfidfVectorizer(max_features=5000,stop_words=GERMAN_STOP_WORDS)
+    results = {}
+    X = np.array(train_dataset["comment_text"]).astype("U")
+    vect = TfidfVectorizer(max_features=5000, stop_words=GERMAN_STOP_WORDS)
     X_dtm = vect.fit_transform(X)
     y = train_dataset["Sub1_Toxic"]
     logreg = LogisticRegression(C=24.0)
@@ -297,7 +297,7 @@ def test_tfidf_logistic_regression(
     predictions = logreg.predict(X_dtm)
     results[f"tfidf_logistic_regression_training"] = metric.compute(predictions=predictions, references=y)
     results[f"tfidf_logistic_regression_training"]["number_of_occurence"] = f"{sum(predictions)}/{len(predictions)}"
-    X = np.array(test_dataset["comment_text"]).astype('U')
+    X = np.array(test_dataset["comment_text"]).astype("U")
     X_dtm = vect.transform(X)
     predictions = logreg.predict(X_dtm)
     references = test_dataset["Sub1_Toxic"]
@@ -327,15 +327,15 @@ def test_all_and_tfidf_logistic_regression(
     metric = load_metric("metrics/singleclass.py")
     results = {}
     X_all = np.array(train_dataset["all"])
-    X_comment_text = np.array(train_dataset["comment_text"]).astype('U')
-    vect = TfidfVectorizer(max_features=5000,stop_words=GERMAN_STOP_WORDS)
+    X_comment_text = np.array(train_dataset["comment_text"]).astype("U")
+    vect = TfidfVectorizer(max_features=5000, stop_words=GERMAN_STOP_WORDS)
     X_tfidf_logistic_regression = vect.fit_transform(X_comment_text).toarray()
     X = np.concatenate((X_all, X_tfidf_logistic_regression), axis=1)
     y = train_dataset["Sub1_Toxic"]
     clf = LogisticRegression(C=24.0)
     clf.fit(X, y)
     X_all = np.array(test_dataset["all"])
-    X_comment_text = np.array(test_dataset["comment_text"]).astype('U')
+    X_comment_text = np.array(test_dataset["comment_text"]).astype("U")
     X_tfidf_logistic_regression = vect.transform(X_comment_text).toarray()
     X = np.concatenate((X_all, X_tfidf_logistic_regression), axis=1)
     references = test_dataset["Sub1_Toxic"]
@@ -343,6 +343,7 @@ def test_all_and_tfidf_logistic_regression(
     results[f"all"] = metric.compute(predictions=predictions, references=references)
     results[f"all"]["number_of_occurence"] = f"{sum(predictions)}/{len(predictions)}"
     logger.info(pprint(results, indent=2))
+
 
 if __name__ == "__main__":
     app()

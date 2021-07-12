@@ -9,6 +9,7 @@ bin/
 *.json
 *.ipynb
 *.csv
+*.zip
 
 rules_based_test_dataset
 rules_based_train_dataset

@@ -1,6 +1,9 @@
+import json
 import random
+import re
+from pathlib import Path
 from typing import List
-import random
+
 import numpy as np
 import pandas as pd
 import torch
@@ -11,11 +14,8 @@ from loguru import logger
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
                           MT5ForConditionalGeneration)
-from pathlib import Path
-import re
 
 from dataset import balance_evaluation, load
-import json
 
 app = typer.Typer()
 
@@ -42,13 +42,14 @@ def best_checkpoint(folder: str):
         final_fs.append(final_f)
     for f in final_fs:
         logger.info(f"\n{f}\n{find_best_checkpoint_from_states(f)}\n")
-    
+
+
 def find_best_checkpoint_from_states(states_file):
     with open(states_file) as f:
         data = json.load(f)
     logger.debug(data["best_metric"])
     return data["best_model_checkpoint"]
-    
+
 
 @app.command()
 def predict(
@@ -135,6 +136,7 @@ def predict(
     print(stats)
     return stats
 
+
 @app.command()
 def joint_predict(
     test_csv: str = "data/train.test.csv",
@@ -195,7 +197,9 @@ def joint_predict(
 
         logger.info("Load and preprocess the dataset.")
         logger.debug(f"test_csv: {test_csv}")
-        dataset = load(test_csv, model_checkpoint, model_type, preprocess=True, labels=dataset_labels, max_length=max_length)
+        dataset = load(
+            test_csv, model_checkpoint, model_type, preprocess=True, labels=dataset_labels, max_length=max_length
+        )
         if model_type == "auto":
             columns = ["input_ids", "token_type_ids", "attention_mask", "labels"]
         elif model_type == "t5":
@@ -231,7 +235,7 @@ def joint_predict(
     stats = metric.compute(predictions=final_predictions, references=all_labels)
     print(stats)
 
-    try: 
+    try:
         ids = dataset["id"]
     except:
         try:
@@ -242,7 +246,6 @@ def joint_predict(
     print(df.head())
     if to_file:
         df.to_csv(output_file)
-
 
 
 @app.command()
@@ -310,7 +313,7 @@ def create_submission(
         predictions = get_predictions(outputs)
         all_predictions += predictions
 
-    try: 
+    try:
         ids = dataset["id"]
     except:
         try:
@@ -320,10 +323,11 @@ def create_submission(
     if binary:
         df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
     else:
-        predictions0  = list(list(zip(*all_predictions))[0])
-        predictions1  = list(list(zip(*all_predictions))[1])
+        predictions0 = list(list(zip(*all_predictions))[0])
+        predictions1 = list(list(zip(*all_predictions))[1])
         df = pd.DataFrame(columns=["id", "prediction0", "prediction1"], data=zip(*[ids, predictions0, predictions1]))
     df.to_csv(output_file)
+
 
 @app.command()
 def create_random_submission(
@@ -331,7 +335,7 @@ def create_random_submission(
     output_file: str = "submission.csv",
 ):
     dataset = load(test_csv, preprocess=False)
-    try: 
+    try:
         ids = dataset["id"]
     except:
         try:
@@ -341,6 +345,7 @@ def create_random_submission(
     all_predictions = [random.randint(0, 1) for _ in range(len(ids))]
     df = pd.DataFrame(columns=["id", "prediction"], data=zip(*[ids, all_predictions]))
     df.to_csv(output_file)
+
 
 if __name__ == "__main__":
     app()
