@@ -160,11 +160,7 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
 
 
 @app.command()
-def stats(csv: List[str], model_checkpoint: str, label_column: str = "hf"):
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
-    except:
-        tokenizer = T5Tokenizer.from_pretrained(model_checkpoint)
+def stats(csv: List[str], label_column: str = "hf"):
     if isinstance(csv, str):
         csv = [csv]
     csv = list(csv)
@@ -177,7 +173,7 @@ def stats(csv: List[str], model_checkpoint: str, label_column: str = "hf"):
         if not isinstance(entry["comment_text"], str):
             print(i, entry["Unnamed: 0"], entry["comment_text"], entry["hf"])
             continue
-        lengths.append(len(tokenizer(entry["comment_text"])["input_ids"]))
+        lengths.append(len(entry["comment_text"].split()))
         labels.append(entry[label_column])
     print(
         "Lengths: ",
