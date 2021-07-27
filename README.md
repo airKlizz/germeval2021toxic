@@ -1,19 +1,17 @@
-# GermEval 2021 Toxic
+# DFKI SLT at GermEval 2021 
 
-## Getting started
+Code for the paper: **Multilingual Pre-training and Data Augmentation for the Classification of Toxicity in Social Media Comments**
 
-### Create a new conda env
+## Datasets
 
-```bash
-conda create -n germeval2021toxic python=3.7
-conda activate germeval2021toxic
+The `data` folder contains all the files used to train the models. Some files might not be used for the final versions of the models.
+
+## Training
+
+To train the models, please run:
+
+```
+python train.py <parameters>
 ```
 
-### Install requirements
-
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-## Data
+Run `python train.py --help` to see all the posibilities.
