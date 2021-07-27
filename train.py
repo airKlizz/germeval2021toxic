@@ -33,6 +33,9 @@ class TrainerWithClassWeightsToxic(Trainer):
         labels = inputs.pop("labels")
         outputs = model(**inputs)
         logits = outputs.logits
+
+        # Uncomment the correct lines to apply the correct class weights. The implementation is not ideal and should be changed.
+
         # Sub1_Toxic
         # loss_fct = torch.nn.CrossEntropyLoss(
         #     weight=torch.Tensor([0.34586929716399506, 0.6541307028360049]).to(logits.device)
@@ -54,17 +57,17 @@ class TrainerWithClassWeightsToxic(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
-class MT5TrainerWithClassWeightsToxic(Trainer):
-    def compute_loss(self, model, inputs, return_outputs=False):
-        labels = inputs.pop("labels")
-        outputs = model(**inputs)
-        logits = outputs.logits
-        weight = torch.zeros(logits.size(-1)).to(logits.device)
-        weight[375] = 0.34586929716399506
-        weight[36339] = 0.6541307028360049
-        loss_fct = torch.nn.CrossEntropyLoss(weight=weight, ignore_index=-100)
-        loss = loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
-        return (loss, outputs) if return_outputs else loss
+# class MT5TrainerWithClassWeightsToxic(Trainer):
+#     def compute_loss(self, model, inputs, return_outputs=False):
+#         labels = inputs.pop("labels")
+#         outputs = model(**inputs)
+#         logits = outputs.logits
+#         weight = torch.zeros(logits.size(-1)).to(logits.device)
+#         weight[375] = 0.34586929716399506
+#         weight[36339] = 0.6541307028360049
+#         loss_fct = torch.nn.CrossEntropyLoss(weight=weight, ignore_index=-100)
+#         loss = loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
+#         return (loss, outputs) if return_outputs else loss
 
 
 # @app.command()
