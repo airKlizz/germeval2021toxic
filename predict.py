@@ -11,10 +11,10 @@ import torch.nn.functional as F
 import typer
 from datasets import load_metric
 from loguru import logger
+from sklearn.metrics import classification_report
 from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification,
                           MT5ForConditionalGeneration)
-from sklearn.metrics import classification_report
 
 from dataset import balance_evaluation, load
 
@@ -447,6 +447,7 @@ def predict_official(
 
     print(stats)
     return stats
+
 
 if __name__ == "__main__":
     app()

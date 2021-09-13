@@ -1,6 +1,8 @@
 import random
+import re
 from typing import List
 
+import emoji
 import numpy as np
 import pandas as pd
 import torch
@@ -108,6 +110,20 @@ def load(csv, model_checkpoint=None, model_type="auto", preprocess=False, labels
     return dataset
 
 
+def remove_in_word_whitespaces(comment):
+    find = re.findall(r"(^| )(([a-zA-zäöüß] ){1,}[a-zA-zäöüß!?,.]([^a-zA-zäöüß]|$))", comment)
+    if len(find) > 0:
+        for match in find:
+            found = match[0] + match[1]
+            replacement = " " + re.sub(r" ", "", found) + " "
+            comment = comment.replace(found, replacement, 1)
+    return comment
+
+
+def demojize(comment):
+    return emoji.demojize(comment, delimiters=(" <", "> "))
+
+
 def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_length=None):
 
     if model_type == "t5":
@@ -116,6 +132,18 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
         tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
     def preprocess_function(examples, labels=labels):
+
+        # pre-process the input text
+        ## insert whitespaces before and after emojis so they are tokenized as separate tokens
+        examples["comment_text"] = list(map(lambda t: demojize(t), examples["comment_text"]))
+        examples["comment_text"] = list(map(lambda t: emoji.emojize(t, delimiters=("<", ">")), examples["comment_text"]))
+        ## convert terms like "a k t u e l l" to "aktuell"
+        examples["comment_text"] = list(map(lambda t: remove_in_word_whitespaces(t), examples["comment_text"]))
+        ## trim mutliple whitespace characters
+        examples["comment_text"] = list(map(lambda t: re.sub(r" {2,}", " ", t), examples["comment_text"]))
+        ## strip outer whitespaces
+        examples["comment_text"] = list(map(lambda t: t.strip(), examples["comment_text"]))
+
         # input
         if model_type == "t5":
             output = tokenizer(
