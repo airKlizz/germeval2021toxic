@@ -135,26 +135,26 @@ def preprocess_dataset(dataset, model_checkpoint, model_type, labels=None, max_l
 
         # pre-process the input text
         ## insert whitespaces before and after emojis so they are tokenized as separate tokens
-        examples["comment_text"] = list(map(lambda t: demojize(t), examples["comment_text"]))
-        examples["comment_text"] = list(map(lambda t: emoji.emojize(t, delimiters=("<", ">")), examples["comment_text"]))
+        examples["comment_text_preprocessed"] = list(map(lambda t: demojize(t), examples["comment_text"]))
+        examples["comment_text_preprocessed"] = list(map(lambda t: emoji.emojize(t, delimiters=("<", ">")), examples["comment_text_preprocessed"]))
         ## convert terms like "a k t u e l l" to "aktuell"
-        examples["comment_text"] = list(map(lambda t: remove_in_word_whitespaces(t), examples["comment_text"]))
+        examples["comment_text_preprocessed"] = list(map(lambda t: remove_in_word_whitespaces(t), examples["comment_text_preprocessed"]))
         ## trim mutliple whitespace characters
-        examples["comment_text"] = list(map(lambda t: re.sub(r" {2,}", " ", t), examples["comment_text"]))
+        examples["comment_text_preprocessed"] = list(map(lambda t: re.sub(r" {2,}", " ", t), examples["comment_text_preprocessed"]))
         ## strip outer whitespaces
-        examples["comment_text"] = list(map(lambda t: t.strip(), examples["comment_text"]))
+        examples["comment_text_preprocessed"] = list(map(lambda t: t.strip(), examples["comment_text_preprocessed"]))
 
         # input
         if model_type == "t5":
             output = tokenizer(
-                ["speech review: " + t for t in examples["comment_text"]],
+                ["speech review: " + t for t in examples["comment_text_preprocessed"]],
                 max_length=max_length,
                 padding="max_length",
                 truncation=True,
             )
             output["decoder_input_ids"] = [[tokenizer.pad_token_id] for _ in range(len(output["input_ids"]))]
         else:
-            output = tokenizer(examples["comment_text"], max_length=max_length, padding="max_length", truncation=True)
+            output = tokenizer(examples["comment_text_preprocessed"], max_length=max_length, padding="max_length", truncation=True)
 
         # label
         def get_label(label):
