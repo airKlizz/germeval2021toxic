@@ -1,5 +1,5 @@
 import random
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 import torch
@@ -14,6 +14,17 @@ from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
 from dataset import load
 
 app = typer.Typer()
+
+
+
+def default_hp_space_optuna(trial) -> Dict[str, float]:
+    return {
+        "learning_rate": trial.suggest_float("learning_rate", 1e-6, 1e-4, log=True),
+        "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 5),
+        "seed": trial.suggest_int("seed", 1, 40),
+        "per_device_train_batch_size": trial.suggest_categorical("per_device_train_batch_size", [4, 8, 16]),
+        "gradient_accumulation_steps": trial.suggest_int("gradient_accumulation_steps", 1, 6)
+    }
 
 
 # class MT5Trainer(Trainer):
@@ -464,7 +475,7 @@ def hyperparameter_search_singleclass(
             return metrics["f1"]
 
     logger.info("Start the hyperparameter search.")
-    best_run = trainer.hyperparameter_search(n_trials=n_trials, direction="maximize", compute_objective=my_objective)
+    best_run = trainer.hyperparameter_search(hp_space=default_hp_space_optuna, n_trials=n_trials, direction="maximize", compute_objective=my_objective)
 
     logger.info(f"Best run: {best_run}")
 
